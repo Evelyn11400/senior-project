@@ -48,54 +48,6 @@
         color: var(--muted);
         margin: 0;
       }
-      details.settings {
-        border-bottom: 1px solid var(--border);
-        background: var(--surface);
-      }
-      details.settings > summary {
-        padding: 0.6rem 1rem;
-        cursor: pointer;
-        font-size: 0.85rem;
-        color: var(--muted);
-        list-style: none;
-      }
-      details.settings > summary::-webkit-details-marker {
-        display: none;
-      }
-      details.settings[open] > summary {
-        color: var(--text);
-      }
-      .settings-body {
-        padding: 0 1rem 1rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-      }
-      .field {
-        display: flex;
-        flex-direction: column;
-        gap: 0.2rem;
-      }
-      .field label {
-        font-size: 0.7rem;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        color: var(--muted);
-      }
-      .field input {
-        padding: 0.45rem 0.55rem;
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        background: var(--bg);
-        color: var(--text);
-        font-size: 0.9rem;
-      }
-      .btn-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.45rem;
-        margin-top: 0.35rem;
-      }
       button {
         padding: 0.45rem 0.75rem;
         border-radius: 6px;
@@ -200,6 +152,30 @@
         margin-bottom: 0.25rem;
         font-family: ui-monospace, Consolas, monospace;
       }
+      .msg .ack {
+        font-weight: 600;
+      }
+      .msg .ack.pending {
+        color: var(--warn);
+      }
+      .msg .ack.ok {
+        color: var(--ok);
+      }
+      .msg .ack.fail {
+        color: var(--err);
+      }
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+      }
+      .toolbar button {
+        font-size: 0.8rem;
+      }
       .msg.system {
         align-self: center;
         max-width: 95%;
@@ -274,42 +250,15 @@
     <header>
       <h1>MQTT chat test</h1>
       <p class="hint">
-        Browser needs <strong>WebSocket</strong> (<code>wss://…:8884/mqtt</code> on HiveMQ Cloud). Use
-        http(s), not <code>file://</code>. Same topic = shared room; open two tabs or two devices to chat.
+        Connects automatically to HiveMQ over <strong>WebSocket</strong>. Use http(s), not
+        <code>file://</code>. Green check on your message = broker acknowledged (QoS&nbsp;1 PUBACK).
       </p>
     </header>
 
-    <details class="settings">
-      <summary>Connection &amp; topic</summary>
-      <div class="settings-body">
-        <div class="field">
-          <label for="brokerUrl">Broker URL</label>
-          <input
-            id="brokerUrl"
-            type="text"
-            placeholder="wss://YOUR_CLUSTER.hivemq.cloud:8884/mqtt"
-            autocomplete="off"
-          />
-        </div>
-        <div class="field">
-          <label for="user">Username</label>
-          <input id="user" type="text" autocomplete="username" />
-        </div>
-        <div class="field">
-          <label for="pass">Password</label>
-          <input id="pass" type="password" autocomplete="current-password" />
-        </div>
-        <div class="field">
-          <label for="topic">Topic (subscribe + publish)</label>
-          <input id="topic" type="text" value="blackout/reboot/names" autocomplete="off" />
-        </div>
-        <div class="btn-row">
-          <button type="button" class="primary" id="btnConnect">Connect</button>
-          <button type="button" id="btnDisconnect" disabled>Disconnect</button>
-          <button type="button" id="btnClearChat">Clear chat</button>
-        </div>
-      </div>
-    </details>
+    <div class="toolbar">
+      <button type="button" id="btnReconnect">Reconnect</button>
+      <button type="button" id="btnClearChat">Clear chat</button>
+    </div>
 
     <div class="status-bar">
       <span class="pill disconnected" id="pill"><i></i> <span id="pillText">Disconnected</span></span>
@@ -333,13 +282,24 @@
       <pre id="debugLog"></pre>
     </details>
 
-    <script src="/mqtt-config.js"></script>
     <script
       src="https://cdn.jsdelivr.net/npm/mqtt@5.10.3/dist/mqtt.min.js"
       crossorigin="anonymous"
     ></script>
     <script>
       (function () {
+        /** Built-in HiveMQ Cloud WebSocket endpoint (class demo — rotate if exposed). */
+        var MQTEST = {
+          host: "2ec7c29478854652aefa31c92c09f792.s1.eu.hivemq.cloud",
+          wsPort: 8884,
+          wsPath: "/mqtt",
+          username: "test2",
+          password: "Aa123456",
+          chatTopic: "blackout/mqtest/chat",
+        };
+        MQTEST.brokerUrl =
+          "wss://" + MQTEST.host + ":" + String(MQTEST.wsPort) + MQTEST.wsPath;
+
         var client = null;
         var clientId = "";
         var $ = function (id) {
@@ -351,22 +311,6 @@
         var pillTextEl = $("pillText");
         var statusDetailEl = $("statusDetail");
         var composerInput = $("composerInput");
-
-        function applyConfig() {
-          var cfg = typeof window !== "undefined" ? window.BLACKOUT_MQTT_CONFIG : null;
-          if (cfg && cfg.host) {
-            $("brokerUrl").value =
-              "wss://" +
-              cfg.host +
-              ":" +
-              String(cfg.wsPort != null ? cfg.wsPort : 8884) +
-              (cfg.wsPath || "/mqtt");
-            if (cfg.username) $("user").value = cfg.username;
-            if (cfg.password) $("pass").value = cfg.password;
-            if (cfg.nameTopic) $("topic").value = cfg.nameTopic;
-          }
-        }
-        applyConfig();
 
         function timeStr() {
           return new Date().toISOString().slice(11, 23);
@@ -404,9 +348,10 @@
           if (detail != null) statusDetailEl.textContent = detail;
         }
 
+        var lastSentBody = "";
+        var lastSentAt = 0;
+
         function setConnected(on) {
-          $("btnConnect").disabled = on;
-          $("btnDisconnect").disabled = !on;
           $("btnSend").disabled = !on;
           composerInput.disabled = !on;
         }
@@ -440,6 +385,35 @@
           chatEl.scrollTop = chatEl.scrollHeight;
         }
 
+        /** Outgoing bubble with ack line updated after QoS 1 PUBACK. */
+        function appendOutgoingChat(topic, body) {
+          var div = document.createElement("div");
+          div.className = "msg out";
+          var meta = document.createElement("div");
+          meta.className = "meta";
+          var ack = document.createElement("span");
+          ack.className = "ack pending";
+          ack.textContent = "Waiting for broker PUBACK…";
+          meta.appendChild(document.createTextNode("You · " + topic + " · "));
+          meta.appendChild(ack);
+          div.appendChild(meta);
+          var b = document.createElement("div");
+          b.textContent = body;
+          div.appendChild(b);
+          chatEl.appendChild(div);
+          chatEl.scrollTop = chatEl.scrollHeight;
+          return {
+            setDelivered: function () {
+              ack.className = "ack ok";
+              ack.textContent = "Delivered ✓ (broker acknowledged)";
+            },
+            setFailed: function (msg) {
+              ack.className = "ack fail";
+              ack.textContent = "Failed — " + (msg || "publish error");
+            },
+          };
+        }
+
         function logStartup() {
           var loc = window.location.protocol;
           debugLine(
@@ -451,10 +425,7 @@
           if (typeof mqtt === "undefined")
             debugLine("mqtt.js failed to load from CDN (check network / adblock).", "err");
           else debugLine("mqtt.js loaded (v5 browser bundle).", "ok");
-          var cfg = window.BLACKOUT_MQTT_CONFIG;
-          if (cfg && cfg.host)
-            debugLine("mqtt-config.js: host present, wsPort=" + (cfg.wsPort || 8884), "ok");
-          else debugLine("No mqtt-config.js or empty host — fill Broker URL manually.", "warn");
+          debugLine("Using built-in MQTEST credentials (user test2) · topic " + MQTEST.chatTopic, "ok");
         }
         logStartup();
 
@@ -468,18 +439,23 @@
             debugLine("Send blocked: not connected.", "warn");
             return;
           }
-          var topic = $("topic").value.trim() || "mqtest/demo";
+          var topic = MQTEST.chatTopic;
           var payload = composerInput.value;
           if (!payload.trim()) return;
+
+          var bubble = appendOutgoingChat(topic, payload);
+          lastSentBody = payload;
+          lastSentAt = Date.now();
+          composerInput.value = "";
 
           client.publish(topic, payload, { qos: 1 }, function (err) {
             if (err) {
               debugLine("PUBLISH error: " + errString(err), "err");
               setPill("error", errString(err));
+              bubble.setFailed(errString(err));
             } else {
-              debugLine("PUBLISH ok topic=" + topic + " bytes=" + payload.length, "ok");
-              appendChat("out", "You · " + topic, payload);
-              composerInput.value = "";
+              debugLine("PUBLISH PUBACK ok topic=" + topic + " bytes=" + payload.length, "ok");
+              bubble.setDelivered();
             }
           });
         }
@@ -492,74 +468,17 @@
           }
         });
 
-        $("btnConnect").addEventListener("click", function () {
-          var url = $("brokerUrl").value.trim();
-          var username = $("user").value.trim();
-          var password = $("pass").value;
-          var topic = $("topic").value.trim() || "mqtest/demo";
-
-          if (!url) {
-            debugLine("Connect aborted: empty broker URL.", "err");
-            return;
-          }
-          if (typeof mqtt === "undefined") {
-            debugLine("Connect aborted: mqtt not loaded.", "err");
-            return;
-          }
-
-          if (client) {
-            try {
-              client.end(true);
-            } catch (e) {}
-            client = null;
-          }
-
-          clientId = "mqtest-" + Math.random().toString(36).slice(2, 10) + "-" + Date.now();
-          setPill("connecting", redactUrl(url) + " · clientId=" + clientId);
-          debugLine("CONNECT attempt → " + redactUrl(url), "ok");
-          debugLine("Auth: username=" + (username ? '"' + username + '"' : "(none)") + " password=" + (password ? "(set)" : "(empty)"), username ? "ok" : "warn");
-          if (!username || !password) debugLine("HiveMQ Cloud usually requires both; empty auth often fails with connack 5 (not authorized).", "warn");
-
-          client = mqtt.connect(url, {
-            username: username || undefined,
-            password: password || undefined,
-            clientId: clientId,
-            clean: true,
-            reconnectPeriod: 0,
-            keepalive: 60,
-            connectTimeout: 30 * 1000,
-          });
-
-          client.on("connect", function (connack) {
-            setPill("connected", "clientId=" + clientId + " · topic=" + topic);
-            setConnected(true);
-            var extra = "";
-            if (connack && typeof connack === "object") {
-              try {
-                extra =
-                  " reasonCode=" +
-                  connack.reasonCode +
-                  " sessionPresent=" +
-                  connack.sessionPresent;
-              } catch (e) {
-                extra = " " + JSON.stringify(connack);
-              }
-            }
-            debugLine("EVENT connect" + extra, "ok");
-            appendChat("system", "", "Connected — messages on topic: " + topic);
-
-            client.subscribe(topic, { qos: 1 }, function (err, granted) {
-              if (err) {
-                debugLine("SUBSCRIBE error: " + errString(err), "err");
-                setPill("error", errString(err));
-              } else {
-                debugLine("SUBSCRIBE ok: " + JSON.stringify(granted), "ok");
-              }
-            });
-          });
-
+        function wireClientEvents(topic) {
           client.on("message", function (t, payload, packet) {
             var text = payload.toString();
+            if (
+              t === topic &&
+              text === lastSentBody &&
+              Date.now() - lastSentAt < 2500
+            ) {
+              debugLine("MESSAGE in (own echo, chat shows only your sent bubble + PUBACK)", "ok");
+              return;
+            }
             var qos = packet && packet.qos != null ? " qos" + packet.qos : "";
             debugLine("MESSAGE in topic=" + t + qos + " len=" + text.length, "ok");
             appendChat("in", "Topic: " + t, text);
@@ -592,22 +511,84 @@
               "warn"
             );
           });
-        });
+        }
 
-        $("btnDisconnect").addEventListener("click", function () {
+        function connectNow() {
+          var url = MQTEST.brokerUrl;
+          var username = MQTEST.username;
+          var password = MQTEST.password;
+          var topic = MQTEST.chatTopic;
+
+          if (typeof mqtt === "undefined") {
+            debugLine("Connect aborted: mqtt not loaded.", "err");
+            setPill("error", "mqtt.js failed to load");
+            return;
+          }
+
           if (client) {
             try {
               client.end(true);
             } catch (e) {}
             client = null;
           }
-          setConnected(false);
-          setPill("disconnected", "Disconnected by user");
-          debugLine("Disconnected by user.", "ok");
-          appendChat("system", "", "Disconnected.");
+
+          clientId = "mqtest-" + Math.random().toString(36).slice(2, 10) + "-" + Date.now();
+          setPill("connecting", redactUrl(url) + " · " + username + " · " + topic);
+          debugLine("CONNECT attempt → " + redactUrl(url), "ok");
+          debugLine('Auth: user "' + username + '"', "ok");
+
+          client = mqtt.connect(url, {
+            username: username,
+            password: password,
+            clientId: clientId,
+            clean: true,
+            reconnectPeriod: 0,
+            keepalive: 60,
+            connectTimeout: 30 * 1000,
+          });
+
+          client.on("connect", function (connack) {
+            setPill("connected", "test2 · " + topic);
+            setConnected(true);
+            var extra = "";
+            if (connack && typeof connack === "object") {
+              try {
+                extra =
+                  " reasonCode=" +
+                  connack.reasonCode +
+                  " sessionPresent=" +
+                  connack.sessionPresent;
+              } catch (e) {
+                extra = " " + JSON.stringify(connack);
+              }
+            }
+            debugLine("EVENT connect" + extra, "ok");
+            appendChat("system", "", "Connected — chat topic: " + topic);
+
+            client.subscribe(topic, { qos: 1 }, function (err, granted) {
+              if (err) {
+                debugLine("SUBSCRIBE error: " + errString(err), "err");
+                setPill("error", errString(err));
+              } else {
+                debugLine("SUBSCRIBE ok: " + JSON.stringify(granted), "ok");
+              }
+            });
+          });
+
+          wireClientEvents(topic);
+        }
+
+        $("btnReconnect").addEventListener("click", function () {
+          debugLine("Manual reconnect.", "ok");
+          connectNow();
         });
 
-        appendChat("system", "", "Open settings, connect, then chat here. Incoming lines appear on the left, yours on the right.");
+        appendChat(
+          "system",
+          "",
+          "Connecting automatically… Your messages show on the right with a delivery check after the broker ACKs."
+        );
+        connectNow();
       })();
     </script>
   </body>
