@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Blackout Reboot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      font-family: 'Oxanium', sans-serif;
+      background: #383e56;
+      color: white;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* SPA: one view visible at a time */
+    .app {
+      width: 100%;
+      max-width: 393px;
+      min-height: 100vh;
+      margin: 0 auto;
+      position: relative;
+      background: #383e56;
+    }
+
+    .view {
+      display: none;
+      min-height: 100vh;
+      padding: 0 24px;
+      padding-bottom: 40px;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    /* ----- Shared: logo block (Blackout + Reboot + dots + diamond/rule, same as desktop) ----- */
+    .logo-block {
+      position: relative;
+      width: 100%;
+      padding-top: 120px;
+      padding-bottom: 24px;
+    }
+
+    .logo-dots {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      margin-bottom: 24px;
+      width: fit-content;
+      filter: drop-shadow(0 0 10.62px #ffffff);
+    }
+
+    .logo-dots span {
+      width: 10px;
+      height: 10px;
+      background: white;
+      border-radius: 5px;
+      flex-shrink: 0;
+    }
+
+    .logo-title-blackout {
+      font-size: 80px;
+      font-weight: 400;
+      line-height: 1;
+      color: white;
+      text-shadow: 0 0 10.62px #ffffff;
+    }
+
+    /* Same motif as desktop: diamond + rule (width matches former SVG slot) */
+    .logo-vector-reboot {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      margin-top: 16px;
+    }
+
+    .logo-title-mark {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 6px;
+      width: 67px;
+      flex-shrink: 0;
+      filter: drop-shadow(0 0 10.62px #ffffff);
+    }
+
+    .logo-title-diamond {
+      width: 10px;
+      height: 10px;
+      flex-shrink: 0;
+      background-color: #ffffff;
+      transform: rotate(45deg);
+      border-radius: 2px;
+    }
+
+    .logo-title-rule {
+      flex: 1;
+      min-width: 0;
+      height: 2px;
+      background-color: #ffffff;
+      border-radius: 1px;
+    }
+
+    .logo-title-reboot {
+      font-size: 64px;
+      font-weight: 400;
+      line-height: 1;
+      color: white;
+      text-shadow: 0 0 10.62px #ffffff;
+    }
+
+    /* Logo motion — entrance + subtle loop (respects reduced motion below) */
+    @keyframes logo-dot-in {
+      from {
+        opacity: 0;
+        transform: scale(0.35);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    @keyframes logo-line-in {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes logo-glow-dots {
+      0%,
+      100% {
+        filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.65));
+      }
+      50% {
+        filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.95));
+      }
+    }
+
+    @keyframes logo-glow-text {
+      0%,
+      100% {
+        text-shadow: 0 0 8px rgba(255, 255, 255, 0.75), 0 0 20px rgba(255, 255, 255, 0.25);
+      }
+      50% {
+        text-shadow: 0 0 12px rgba(255, 255, 255, 0.95), 0 0 28px rgba(255, 255, 255, 0.35);
+      }
+    }
+
+    @keyframes logo-diamond-pulse {
+      0%,
+      100% {
+        transform: rotate(45deg) scale(1);
+      }
+      50% {
+        transform: rotate(45deg) scale(1.12);
+      }
+    }
+
+    @keyframes logo-rule-shimmer {
+      0%,
+      100% {
+        opacity: 1;
+        transform: scaleX(1);
+      }
+      50% {
+        opacity: 0.82;
+        transform: scaleX(0.92);
+      }
+    }
+
+    .view.active .logo-dots {
+      animation: logo-line-in 0.55s ease-out forwards, logo-glow-dots 3.2s ease-in-out infinite 0.75s;
+    }
+
+    .view.active .logo-dots span {
+      opacity: 0;
+      animation: logo-dot-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    .view.active .logo-dots span:nth-child(1) {
+      animation-delay: 0.04s;
+    }
+    .view.active .logo-dots span:nth-child(2) {
+      animation-delay: 0.1s;
+    }
+    .view.active .logo-dots span:nth-child(3) {
+      animation-delay: 0.16s;
+    }
+    .view.active .logo-dots span:nth-child(4) {
+      animation-delay: 0.22s;
+    }
+    .view.active .logo-dots span:nth-child(5) {
+      animation-delay: 0.28s;
+    }
+
+    .view.active .logo-title-blackout {
+      opacity: 0;
+      animation: logo-line-in 0.6s ease-out 0.18s forwards,
+        logo-glow-text 3.8s ease-in-out infinite 0.9s;
+    }
+
+    .view.active .logo-vector-reboot {
+      opacity: 0;
+      animation: logo-line-in 0.6s ease-out 0.38s forwards;
+    }
+
+    .view.active .logo-title-mark {
+      animation: logo-glow-dots 3.2s ease-in-out infinite 1s;
+    }
+
+    .view.active .logo-title-diamond {
+      animation: logo-diamond-pulse 2.4s ease-in-out infinite 0.85s;
+    }
+
+    .view.active .logo-title-rule {
+      transform-origin: left center;
+      animation: logo-rule-shimmer 2.8s ease-in-out infinite 1.05s;
+    }
+
+    .view.active .logo-title-reboot {
+      opacity: 0;
+      animation: logo-line-in 0.55s ease-out 0.42s forwards,
+        logo-glow-text 3.8s ease-in-out infinite 1s;
+    }
+
+    /* Connecting: logo fully static */
+    #view-connecting.view.active .logo-dots,
+    #view-connecting.view.active .logo-dots span,
+    #view-connecting.view.active .logo-title-blackout,
+    #view-connecting.view.active .logo-vector-reboot,
+    #view-connecting.view.active .logo-title-mark,
+    #view-connecting.view.active .logo-title-diamond,
+    #view-connecting.view.active .logo-title-rule,
+    #view-connecting.view.active .logo-title-reboot {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+    }
+
+    #view-connecting.view.active .logo-title-diamond {
+      transform: rotate(45deg) !important;
+    }
+
+    #view-connecting.view.active .logo-title-rule {
+      transform: none !important;
+    }
+
+    #view-connecting.view.active .logo-dots {
+      filter: drop-shadow(0 0 10.62px #ffffff);
+    }
+
+    #view-connecting.view.active .logo-title-mark {
+      filter: drop-shadow(0 0 10.62px #ffffff);
+    }
+
+    #view-connecting.view.active .logo-title-blackout,
+    #view-connecting.view.active .logo-title-reboot {
+      text-shadow: 0 0 10.62px #ffffff;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .view.active .logo-dots,
+      .view.active .logo-dots span,
+      .view.active .logo-title-blackout,
+      .view.active .logo-vector-reboot,
+      .view.active .logo-title-mark,
+      .view.active .logo-title-diamond,
+      .view.active .logo-title-rule,
+      .view.active .logo-title-reboot {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+      }
+
+      .view.active .logo-title-diamond {
+        transform: rotate(45deg) !important;
+      }
+
+      .view.active .logo-title-rule {
+        transform: none !important;
+      }
+    }
+
+    /* ----- View 1: Splash ----- */
+    #view-splash {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    #view-splash .logo-block {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      width: fit-content;
+      max-width: 100%;
+      margin-left: auto;
+      margin-right: auto;
+      padding-top: 306px;
+      padding-bottom: 24px;
+      transform: scale(0.9);
+      transform-origin: top center;
+    }
+
+    /* ----- View 2: Name input ----- */
+    .name-prompt {
+      text-align: center;
+      margin-top: 48px;
+    }
+
+    .name-confirm-copy {
+      font-size: 14px;
+      color: rgba(255,255,255,0.85);
+      margin-bottom: 16px;
+      max-width: 320px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* Name confirmation popup — fade/slide in (no display:none so transitions run) */
+    .name-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(4px);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.4s cubic-bezier(0.32, 0, 0.67, 1), visibility 0.4s;
+    }
+
+    .name-modal-backdrop:not(.hidden) {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .name-modal-backdrop.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .name-modal {
+      width: 100%;
+      max-width: 320px;
+      padding: 24px 20px;
+      background: #eedad1;
+      border-radius: 16px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+      text-align: center;
+      transform: translateY(20px) scale(0.96);
+      opacity: 0;
+      transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s cubic-bezier(0.32, 0, 0.67, 1);
+      transition-delay: 0s;
+    }
+
+    .name-modal-backdrop:not(.hidden) .name-modal {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+      transition-delay: 0.06s;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .name-modal-backdrop,
+      .name-modal {
+        transition-duration: 0.01ms !important;
+        transition-delay: 0s !important;
+      }
+
+      .name-modal-backdrop:not(.hidden) .name-modal {
+        transition-delay: 0s !important;
+      }
+    }
+
+    .name-modal .name-confirm-copy {
+      color: #2a2f42;
+      margin-bottom: 20px;
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .btn-confirm {
+      display: inline-block;
+      min-width: 160px;
+      padding: 14px 28px;
+      font-family: 'Oxanium', sans-serif;
+      font-size: 16px;
+      font-weight: 400;
+      color: #fff;
+      background: #383e56;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-confirm:hover {
+      filter: brightness(1.08);
+    }
+
+    .name-prompt label {
+      display: block;
+      font-size: 16px;
+      color: rgba(255,255,255,0.9);
+      margin-bottom: 12px;
+    }
+
+    .name-prompt input {
+      width: 100%;
+      max-width: 320px;
+      margin: 0 auto;
+      padding: 14px 16px;
+      font-family: 'Oxanium', sans-serif;
+      font-size: 16px;
+      color: #1a1a1a;
+      background: white;
+      border: none;
+      border-radius: 12px;
+      outline: none;
+    }
+
+    .name-prompt input::placeholder {
+      color: #888;
+    }
+
+    .btn-ok {
+      display: block;
+      width: 100%;
+      max-width: 200px;
+      margin: 24px auto 0;
+      padding: 14px 24px;
+      font-family: 'Oxanium', sans-serif;
+      font-size: 16px;
+      font-weight: 400;
+      color: #1a1a1a;
+      background: #eedad1;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+
+    .btn-ok:hover {
+      background: #e8d0c5;
+    }
+
+    /* ----- View 3: Connecting ----- */
+    .connecting-text {
+      text-align: center;
+      font-size: 16px;
+      color: rgba(255,255,255,0.95);
+      margin-top: 48px;
+      margin-bottom: 24px;
+    }
+
+    .progress-wrap {
+      width: 100%;
+      height: 8px;
+      background: rgba(255,255,255,0.3);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: #d4846a;
+      border-radius: 4px;
+      transition: width 1.35s cubic-bezier(0.33, 0.72, 0.28, 1);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .progress-fill {
+        transition-duration: 0.2s;
+        transition-timing-function: ease;
+      }
+    }
+
+    /* ----- View 4: Dashboard ----- */
+    .dashboard-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 0 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.15);
+    }
+
+    .dashboard-logo-br {
+      font-size: 24px;
+      font-weight: 400;
+      color: white;
+      text-shadow: 0 0 8px white;
+      letter-spacing: 0.05em;
+    }
+
+    .dashboard-welcome {
+      font-size: 14px;
+      color: rgba(255,255,255,0.95);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .stat-card {
+      background: #eedad1;
+      color: #1a1a1a;
+      padding: 16px;
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .stat-card .label {
+      font-size: 12px;
+      opacity: 0.85;
+      margin-bottom: 4px;
+    }
+
+    .stat-card .value {
+      font-size: 20px;
+      font-weight: 400;
+    }
+
+    .actions-section {
+      margin-top: 24px;
+      padding: 20px;
+      border: 2px dashed rgba(255,255,255,0.4);
+      border-radius: 12px;
+    }
+
+    .actions-section .title {
+      font-size: 14px;
+      margin-bottom: 12px;
+      color: rgba(255,255,255,0.9);
+    }
+
+    .actions-buttons {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .actions-buttons button {
+      flex: 1;
+      min-width: 120px;
+      padding: 12px 16px;
+      font-family: 'Oxanium', sans-serif;
+      font-size: 14px;
+      color: white;
+      background: #2a2f45;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    /* ----- View 5: Content (placeholder) ----- */
+    .content-placeholder {
+      margin-top: 20px;
+      min-height: 400px;
+      background: white;
+      border-radius: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- View 1: Splash -->
+    <section id="view-splash" class="view active" data-view="splash">
+      <div class="logo-block">
+        <div class="logo-dots">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <div class="logo-title-blackout">Blackout</div>
+        <div class="logo-vector-reboot">
+          <div class="logo-title-mark" aria-hidden="true">
+            <span class="logo-title-diamond"></span>
+            <span class="logo-title-rule"></span>
+          </div>
+          <span class="logo-title-reboot">Reboot</span>
+        </div>
+      </div>
+      <div class="name-prompt">
+        <button type="button" class="btn-ok" data-next="name">Continue</button>
+      </div>
+    </section>
+
+    <!-- View 2: Name input -->
+    <section id="view-name" class="view" data-view="name">
+      <div class="logo-block">
+        <div class="logo-dots">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <div class="logo-title-blackout">Blackout</div>
+        <div class="logo-vector-reboot">
+          <div class="logo-title-mark" aria-hidden="true">
+            <span class="logo-title-diamond"></span>
+            <span class="logo-title-rule"></span>
+          </div>
+          <span class="logo-title-reboot">Reboot</span>
+        </div>
+      </div>
+      <div
+        class="name-modal-backdrop hidden"
+        id="name-modal-backdrop"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="name-modal-title"
+        aria-hidden="true"
+      >
+        <div class="name-modal">
+          <p class="name-confirm-copy" id="name-modal-title">
+            Before we connect you to the system, we need to confirm your name.
+          </p>
+          <button type="button" class="btn-confirm" id="btn-name-modal-confirm">Confirm</button>
+        </div>
+      </div>
+
+      <form class="name-prompt" id="form-name" data-next="connecting">
+        <label for="input-name">Enter your name here</label>
+        <input type="text" id="input-name" name="name" placeholder="Your name" autocomplete="name" />
+        <button type="submit" class="btn-ok">OK</button>
+      </form>
+    </section>
+
+    <!-- View 3: Connecting -->
+    <section id="view-connecting" class="view" data-view="connecting">
+      <div class="logo-block">
+        <div class="logo-dots">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <div class="logo-title-blackout">Blackout</div>
+        <div class="logo-vector-reboot">
+          <div class="logo-title-mark" aria-hidden="true">
+            <span class="logo-title-diamond"></span>
+            <span class="logo-title-rule"></span>
+          </div>
+          <span class="logo-title-reboot">Reboot</span>
+        </div>
+      </div>
+      <p class="connecting-text">Connecting to the sharing map...</p>
+      <div class="progress-wrap">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+    </section>
+
+    <!-- View 4: Dashboard -->
+    <section id="view-dashboard" class="view" data-view="dashboard">
+      <header class="dashboard-header">
+        <span class="dashboard-logo-br">BR</span>
+        <span class="dashboard-welcome" id="welcome-text">Welcome!</span>
+      </header>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="label">Blackout Rate</div>
+          <div class="value">67%</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Energy Output</div>
+          <div class="value">145 MW</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Active Stations</div>
+          <div class="value">18</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Stations Need to Repair</div>
+          <div class="value">5</div>
+        </div>
+      </div>
+      <div class="actions-section">
+        <div class="title">Actions</div>
+        <div class="actions-buttons">
+          <button type="button">Build Station</button>
+          <button type="button">Repair Station</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- View 5: Content placeholder -->
+    <section id="view-content" class="view" data-view="content">
+      <header class="dashboard-header">
+        <span class="dashboard-logo-br">BR</span>
+        <span class="dashboard-welcome" id="welcome-text-content">Welcome!</span>
+      </header>
+      <div class="content-placeholder"></div>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      const views = document.querySelectorAll('.view');
+      const form = document.getElementById('form-name');
+      const inputName = document.getElementById('input-name');
+      const welcomeEls = document.querySelectorAll('[id^="welcome-text"]');
+      const progressFill = document.getElementById('progress-fill');
+      const nameModalBackdrop = document.getElementById('name-modal-backdrop');
+      const btnNameModalConfirm = document.getElementById('btn-name-modal-confirm');
+
+      function openNameModal() {
+        if (!nameModalBackdrop) return;
+        nameModalBackdrop.classList.remove('hidden');
+        nameModalBackdrop.setAttribute('aria-hidden', 'false');
+      }
+
+      function closeNameModal() {
+        if (!nameModalBackdrop) return;
+        nameModalBackdrop.classList.add('hidden');
+        nameModalBackdrop.setAttribute('aria-hidden', 'true');
+        if (inputName) inputName.focus();
+      }
+
+      function startConnectingProgress() {
+        function goDashboard() {
+          showView('dashboard');
+        }
+
+        if (!progressFill) {
+          setTimeout(goDashboard, 1500);
+          return;
+        }
+
+        progressFill.style.transition = 'none';
+        progressFill.style.width = '0%';
+        void progressFill.offsetWidth;
+        progressFill.style.removeProperty('transition');
+
+        var finished = false;
+        function finish() {
+          if (finished) return;
+          finished = true;
+          progressFill.removeEventListener('transitionend', onEnd);
+          goDashboard();
+        }
+
+        function onEnd(e) {
+          if (e.propertyName !== 'width') return;
+          finish();
+        }
+
+        progressFill.addEventListener('transitionend', onEnd);
+        setTimeout(finish, 2200);
+
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            progressFill.style.width = '100%';
+          });
+        });
+      }
+
+      function showView(viewId) {
+        views.forEach(function (v) {
+          v.classList.toggle('active', v.id === 'view-' + viewId);
+        });
+        history.replaceState(null, '', '#' + viewId);
+
+        if (viewId === 'name') {
+          openNameModal();
+        }
+
+        if (viewId === 'connecting') {
+          startConnectingProgress();
+        }
+
+        if (viewId === 'dashboard' || viewId === 'content') {
+          updateWelcome();
+        }
+      }
+
+      function getStoredName() {
+        try {
+          return (localStorage.getItem('blackout-reboot-name') || '').trim();
+        } catch (e) {
+          return '';
+        }
+      }
+
+      function updateWelcome() {
+        var name = getStoredName();
+        welcomeEls.forEach(function (el) {
+          if (!el) return;
+          el.textContent = name ? 'Welcome, ' + name + '!' : 'Welcome!';
+        });
+      }
+
+      document.querySelector('#view-splash .btn-ok').addEventListener('click', function () {
+        showView('name');
+      });
+
+      if (btnNameModalConfirm) {
+        btnNameModalConfirm.addEventListener('click', closeNameModal);
+      }
+
+      if (form) {
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var name = (inputName.value || '').trim();
+          try {
+            localStorage.setItem('blackout-reboot-name', name);
+          } catch (err) {}
+          updateWelcome();
+          showView('connecting');
+        });
+      }
+
+      window.addEventListener('hashchange', function () {
+        var hash = (location.hash || '#splash').slice(1);
+        if (['splash', 'name', 'connecting', 'dashboard', 'content'].indexOf(hash) === -1) return;
+        views.forEach(function (v) {
+          v.classList.toggle('active', v.id === 'view-' + hash);
+        });
+        if (hash === 'name') {
+          openNameModal();
+        }
+        if (hash === 'connecting') {
+          startConnectingProgress();
+        }
+        if (hash === 'dashboard' || hash === 'content') {
+          updateWelcome();
+        }
+      });
+
+      var initialHash = (location.hash || '#splash').slice(1);
+      if (['splash', 'name', 'connecting', 'dashboard', 'content'].indexOf(initialHash) !== -1) {
+        views.forEach(function (v) {
+          v.classList.toggle('active', v.id === 'view-' + initialHash);
+        });
+      }
+      if (initialHash === 'name') {
+        openNameModal();
+      }
+      if (initialHash === 'connecting') {
+        startConnectingProgress();
+      }
+      updateWelcome();
+    })();
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.3/dist/mqtt.min.js" crossorigin="anonymous"></script>
+  <script src="mqtt-config.js"></script>
+  <script src="hivemq-client.js"></script>
+</body>
+</html>

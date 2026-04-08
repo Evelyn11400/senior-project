@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Blackout Reboot — Desktop</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="page-desktop">
+    <div class="dashboard">
+      <div class="desktop" data-node-id="10:2" aria-label="Blackout Reboot desktop">
+        <section class="dashboard__top" aria-label="Blackout Reboot map">
+          <div class="dashboard__map">
+            <!-- Raster is embedded inside map-embedded.svg (pattern + base64 PNG); avoids broken remote asset / layering issues -->
+            <img
+              src="map-embedded.svg"
+              alt=""
+              width="1474"
+              height="1024"
+            />
+            <svg
+              class="dashboard__map-overlay"
+              viewBox="0 0 1474 1024"
+              preserveAspectRatio="xMidYMid slice"
+              aria-hidden="true"
+              focusable="false"
+              fill="none"
+            >
+              <g id="map-markers"></g>
+            </svg>
+          </div>
+
+          <div class="dashboard__title">
+            <div class="dashboard__title-dots" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <p class="dashboard__title-main">Blackout</p>
+            <p class="dashboard__title-sub">Reboot</p>
+            <div class="dashboard__title-mark" aria-hidden="true">
+              <span class="dashboard__title-diamond"></span>
+              <span class="dashboard__title-rule"></span>
+            </div>
+          </div>
+
+          <div class="dashboard__stats" aria-label="Blackout statistics">
+            <article class="stat-card">
+              <div class="stat-card__inner">
+                <span class="stat-card__label">Blackout Rate</span>
+                <p class="stat-card__value">
+                  <span class="stat-card__number">67</span><span class="stat-card__unit">%</span>
+                </p>
+              </div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-card__inner">
+                <span class="stat-card__label">Blackout Rate</span>
+                <p class="stat-card__value">
+                  <span class="stat-card__number">67</span><span class="stat-card__unit">%</span>
+                </p>
+              </div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-card__inner">
+                <span class="stat-card__label">Blackout Rate</span>
+                <p class="stat-card__value">
+                  <span class="stat-card__number">67</span><span class="stat-card__unit">%</span>
+                </p>
+              </div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-card__inner">
+                <span class="stat-card__label">Blackout Rate</span>
+                <p class="stat-card__value">
+                  <span class="stat-card__number">67</span><span class="stat-card__unit">%</span>
+                </p>
+              </div>
+            </article>
+          </div>
+
+          <div class="dashboard__legend">
+            <span class="dashboard__legend-swatch" aria-hidden="true"></span>
+            <span class="dashboard__legend-label">AECD devices</span>
+          </div>
+        </section>
+
+        <section class="dashboard__bottom" aria-label="Detail panels">
+          <div class="dashboard__bottom-inner">
+            <div class="dashboard__bottom-panel"></div>
+            <div class="dashboard__bottom-panel"></div>
+            <div class="dashboard__bottom-panel"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </body>
+</html>

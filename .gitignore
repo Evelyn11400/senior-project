@@ -1,0 +1,7 @@
+# Local MQTT credentials (never commit)
+mqtt-config.js
+
+# OS / editor
+Thumbs.db
+Desktop.ini
+*.log

@@ -1,0 +1,505 @@
+/* Global reset and base styles */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  font-family: "Oxanium", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background-color: #000;
+  color: #f9fafb;
+}
+
+/* Desktop frame — Figma node 10:2 */
+
+.dashboard {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 0;
+  background-color: #000;
+}
+
+.desktop {
+  width: 100%;
+  max-width: 1440px;
+  position: relative;
+  background-color: #000;
+}
+
+/* Top card (map + stats) — 1440×789 */
+
+.dashboard__top {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1440 / 789;
+  background-color: #383e56;
+  border-radius: 13.741px;
+  overflow: hidden;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
+}
+
+.dashboard__map {
+  position: absolute;
+  left: -7.847%;
+  top: -18.377%;
+  width: 102.361%;
+  height: 129.785%;
+  pointer-events: none;
+  transform: scale(0.8);
+  transform-origin: center center;
+}
+
+.dashboard__map img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: drop-shadow(0 0 10px #ffffff);
+  z-index: 0;
+}
+
+/* SVG stacked on the image only — same box as img, same slice as object-fit: cover; transparent except markers/paths */
+.dashboard__map-overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+  z-index: 1;
+  pointer-events: none;
+  fill: none;
+  background: none;
+}
+
+/* Title block — Figma 12:66 (positions); diamond + line are CSS, not the exported vector */
+
+.dashboard__title {
+  position: absolute;
+  top: 5.45%;
+  right: 2.292%;
+  width: min(253px, 17.57%);
+  height: 136.651px;
+  color: #ffffff;
+}
+
+.dashboard__title-dots {
+  position: absolute;
+  left: 66.05%;
+  top: 34px;
+  display: flex;
+  gap: 11.713px;
+  align-items: center;
+  filter: drop-shadow(0 0 10.62px #ffffff);
+}
+
+.dashboard__title-dots span {
+  width: 7.809px;
+  height: 7.809px;
+  border-radius: 3.904px;
+  background-color: #ffffff;
+  flex-shrink: 0;
+}
+
+.dashboard__title-main {
+  position: absolute;
+  left: 1px;
+  top: 38px;
+  margin: 0;
+  font-family: "Oxanium", system-ui, sans-serif;
+  font-weight: 400;
+  font-size: clamp(36px, 4.34vw, 62.469px);
+  line-height: normal;
+  text-shadow: 0 0 10.62px #ffffff;
+  white-space: nowrap;
+}
+
+.dashboard__title-sub {
+  position: absolute;
+  left: 85.11px;
+  top: 108.18px;
+  margin: 0;
+  font-family: "Oxanium", system-ui, sans-serif;
+  font-weight: 400;
+  font-size: clamp(28px, 3.47vw, 49.975px);
+  line-height: normal;
+  text-shadow: 0 0 10.62px #ffffff;
+  white-space: nowrap;
+}
+
+.dashboard__title-mark {
+  position: absolute;
+  left: 10.15px;
+  top: 132.29px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  width: 66.764px;
+  filter: drop-shadow(0 0 10.62px #ffffff);
+}
+
+.dashboard__title-diamond {
+  width: 7.809px;
+  height: 7.809px;
+  flex-shrink: 0;
+  background-color: #ffffff;
+  transform: rotate(45deg);
+  border-radius: 2px;
+}
+
+.dashboard__title-rule {
+  flex: 1;
+  min-width: 0;
+  height: 2px;
+  background-color: #ffffff;
+  border-radius: 1px;
+}
+
+/* Stat cards — Figma 12:63 */
+
+.dashboard__stats {
+  position: absolute;
+  right: 2.569%;
+  top: 33.08%;
+  width: 221px;
+  max-width: calc(100% - 4.5rem);
+  display: flex;
+  flex-direction: column;
+  gap: 25.636px;
+}
+
+.stat-card {
+  position: relative;
+  background-color: #fbd8ca;
+  border-radius: 15.802px;
+  height: 61.88px;
+  width: 100%;
+  overflow: hidden;
+  color: #383e56;
+}
+
+.stat-card__inner {
+  position: absolute;
+  left: 50%;
+  top: 4.42px;
+  transform: translateX(calc(-50% - 0.44px));
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14.144px;
+  white-space: nowrap;
+}
+
+.stat-card__label {
+  font-size: 14.144px;
+  font-weight: 400;
+  line-height: normal;
+}
+
+.stat-card__value {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  line-height: 1;
+  text-align: center;
+}
+
+.stat-card__number {
+  font-size: 42.432px;
+  font-weight: 400;
+  line-height: normal;
+}
+
+.stat-card__unit {
+  font-size: 14.144px;
+  line-height: normal;
+}
+
+/* Legend — Figma 12:77–12:78 */
+
+.dashboard__legend {
+  position: absolute;
+  left: 5%;
+  top: 89.61%;
+  display: flex;
+  align-items: center;
+  gap: 17px;
+  color: #ffffff;
+}
+
+.dashboard__legend-swatch {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  background-color: #f69e7b;
+}
+
+.dashboard__legend-label {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: normal;
+  transform: translateY(2px);
+}
+
+/* Bottom peach — Figma 12:64, three panels 12:79 / 64:37 / 64:38 */
+
+.dashboard__bottom {
+  background-color: #fbd8ca;
+  width: 100%;
+  min-height: 254px;
+  margin-top: -21px;
+  position: relative;
+  z-index: 1;
+  padding: 26px 16px 28px;
+  box-sizing: border-box;
+}
+
+.dashboard__bottom-inner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 26px;
+  max-width: 100%;
+}
+
+.dashboard__bottom-panel {
+  width: min(435px, 100%);
+  height: 202px;
+  background-color: #383e56;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+/* Mobile iPhone layout (separate Figma frame) */
+
+.phone {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background-color: #eedad1;
+}
+
+.phone__screen {
+  width: 393px;
+  height: 852px;
+  background-color: #383e56;
+  border-radius: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.phone__title {
+  position: absolute;
+  left: 35px;
+  top: 306px;
+  width: 324px;
+  height: 175px;
+  color: #ffffff;
+  text-shadow: 0 0 13.6px #ffffff;
+  font-family: "Oxanium", system-ui, sans-serif;
+}
+
+.phone__title-dots {
+  position: absolute;
+  top: 0;
+  left: 214px;
+  display: flex;
+  gap: 15px;
+  filter: drop-shadow(0 0 13.6px #ffffff);
+}
+
+.phone__title-dots span {
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+  background-color: #ffffff;
+}
+
+.phone__title-main {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  margin: 0;
+  font-size: 80px;
+}
+
+.phone__title-sub {
+  position: absolute;
+  top: 95px;
+  left: 109px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 64px;
+}
+
+.phone__title-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  filter: drop-shadow(0 0 13.6px #ffffff);
+}
+
+.phone__title-diamond {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background-color: #ffffff;
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+
+.phone__title-rule {
+  width: 48px;
+  height: 2px;
+  background-color: #ffffff;
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+/* Responsiveness */
+
+@media (max-width: 900px) {
+  body:not(.page-desktop) .desktop {
+    display: none;
+  }
+
+  body:not(.page-desktop) .phone {
+    display: flex;
+  }
+}
+
+/* Desktop: fill the monitor — ratio from Figma (789 + 254 − 21 = 1022) */
+@media (min-width: 901px) {
+  .dashboard {
+    width: 100%;
+    min-height: 100dvh;
+    height: 100dvh;
+    padding: 0;
+    align-items: stretch;
+    overflow: hidden;
+  }
+
+  .desktop {
+    max-width: none;
+    width: 100%;
+    height: 100dvh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .dashboard__top {
+    width: 100%;
+    flex-shrink: 0;
+    height: calc(100dvh * 789 / 1022);
+    aspect-ratio: unset;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .dashboard__bottom {
+    flex-shrink: 0;
+    height: calc(100dvh * 254 / 1022);
+    min-height: 0;
+    margin-top: calc(-100dvh * 21 / 1022);
+    display: flex;
+    flex-direction: column;
+    padding: calc(100dvh * 26 / 1022) clamp(12px, 1.5vw, 24px)
+      calc(100dvh * 28 / 1022);
+  }
+
+  .dashboard__bottom-inner {
+    flex: 1;
+    min-height: 0;
+    align-items: stretch;
+  }
+
+  .dashboard__bottom-panel {
+    height: auto;
+    min-height: 0;
+    flex: 1 1 0;
+    width: auto;
+    max-width: none;
+  }
+}
+
+/* desktop.html — full-screen desktop layout at any viewport width */
+body.page-desktop .phone {
+  display: none !important;
+}
+
+body.page-desktop .dashboard {
+  width: 100%;
+  min-height: 100dvh;
+  height: 100dvh;
+  padding: 0;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+body.page-desktop .desktop {
+  max-width: none;
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  display: flex !important;
+  flex-direction: column;
+  flex: 1;
+}
+
+body.page-desktop .dashboard__top {
+  width: 100%;
+  flex-shrink: 0;
+  height: calc(100dvh * 789 / 1022);
+  aspect-ratio: unset;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+body.page-desktop .dashboard__bottom {
+  flex-shrink: 0;
+  height: calc(100dvh * 254 / 1022);
+  min-height: 0;
+  margin-top: calc(-100dvh * 21 / 1022);
+  display: flex;
+  flex-direction: column;
+  padding: calc(100dvh * 26 / 1022) clamp(12px, 1.5vw, 24px)
+    calc(100dvh * 28 / 1022);
+}
+
+body.page-desktop .dashboard__bottom-inner {
+  flex: 1;
+  min-height: 0;
+  align-items: stretch;
+}
+
+body.page-desktop .dashboard__bottom-panel {
+  height: auto;
+  min-height: 0;
+  flex: 1 1 0;
+  width: auto;
+  max-width: none;
+}
