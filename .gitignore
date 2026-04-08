@@ -3,6 +3,9 @@ mqtt-config.js
 
 node_modules/
 
+# Vercel build output (generated on deploy)
+public/
+
 # OS / editor
 Thumbs.db
 Desktop.ini

@@ -2,6 +2,6 @@
   "name": "blackout-reboot",
   "private": true,
   "scripts": {
-    "build": "node scripts/write-mqtt-config.cjs"
+    "build": "node scripts/vercel-build.cjs"
   }
 }

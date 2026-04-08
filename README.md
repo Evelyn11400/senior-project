@@ -80,10 +80,10 @@ Open **`MQtest.html`** with Live Server (or your static host). Click **Connect &
    | `MQTT_WS_PATH` | `/mqtt` (optional) |
    | `MQTT_NAME_TOPIC` | `blackout/reboot/names` (optional) |
 
-   The build writes **`mqtt-config.js`** on Vercel only (your local `mqtt-config.js` stays gitignored and is **not** overwritten when you run `npm run build` locally — the script runs only when `VERCEL=1`).
+   The Vercel build (`scripts/vercel-build.cjs`) copies HTML/CSS/JS/SVG into **`public/`** and writes **`public/mqtt-config.js`** from env. That folder has **no** `package.json`, so Vercel treats it as **static files** (avoids “No entrypoint” errors). Locally, `npm run build` **does nothing** unless `VERCEL=1`; keep using **`mqtt-config.js`** in the repo root for local dev.
 4. **Redeploy** after saving env vars.
 
-**If the site has no CSS / 404 on `/styles.css`:** In Vercel → Project → **Settings** → **General** → *Build & Development Settings*, set **Output Directory** to **empty** (or `.`) so it matches this repo’s `vercel.json` (`outputDirectory: "."`). If it was `dist`, `out`, or `public`, Vercel would only upload that folder — without your `styles.css` and `map-embedded.svg`. Save, then **Redeploy**.
+**Vercel settings:** **Output Directory** must be **`public`** (same as `vercel.json`). If the dashboard overrides it to `.` or `dist`, fix it or clear the override so the git config wins.
 
 **Live URLs** (replace with your deployment domain):
 
