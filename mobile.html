@@ -811,14 +811,13 @@
         btnNameModalConfirm.addEventListener('click', closeNameModal);
       }
 
-      function submitNameToServer(name) {
+      function publishNameToHiveMQ(name) {
         if (!name) return;
-        fetch('/api/names', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: name }),
-          cache: 'no-store',
-        }).catch(function () {});
+        if (window.BlackoutMQTT && typeof window.BlackoutMQTT.publishSubmittedName === 'function') {
+          try {
+            window.BlackoutMQTT.publishSubmittedName(name);
+          } catch (err) {}
+        }
       }
 
       if (form) {
@@ -828,7 +827,7 @@
           try {
             localStorage.setItem('blackout-reboot-name', name);
           } catch (err) {}
-          submitNameToServer(name);
+          publishNameToHiveMQ(name);
           updateWelcome();
           showView('connecting');
         });
@@ -867,7 +866,7 @@
     })();
   </script>
   <script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.3/dist/mqtt.min.js" crossorigin="anonymous"></script>
-  <script src="mqtt-config.js"></script>
-  <script src="hivemq-client.js"></script>
+  <script src="/mqtt-config.js"></script>
+  <script src="/hivemq-client.js"></script>
 </body>
 </html>

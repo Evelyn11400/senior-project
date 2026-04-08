@@ -8,4 +8,6 @@ window.BLACKOUT_MQTT_CONFIG = {
   username: "",
   password: "",
   clientId: "",
+  /** optional; mobile + desktop must match */
+  // nameTopic: "blackout/reboot/names",
 };

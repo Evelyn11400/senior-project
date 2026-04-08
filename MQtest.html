@@ -77,9 +77,14 @@
   <body>
     <h1>MQTT test (browser uses WebSocket)</h1>
     <p class="hint">
-      TCP TLS on port <strong>8883</strong> is for apps/devices, not the browser. This page uses
-      <strong>wss://…:8884/mqtt</strong> (HiveMQ Cloud WebSocket), which is the correct way to test
-      from HTML5.
+      TCP TLS on port <strong>8883</strong> is for native apps, not the browser. This page uses
+      <strong>wss://…:8884/mqtt</strong> (HiveMQ Cloud WebSocket).
+      <strong>Phone and PC do not need the same Wi‑Fi</strong> — only internet and the same broker
+      credentials. Serve this page over <strong>http(s)</strong> (not <code>file://</code>).
+    </p>
+    <p class="hint">
+      If <code>mqtt-config.js</code> exists next to this file, fields below are filled from it when
+      you load the page (still use Live Server / a static host).
     </p>
 
     <div class="row">
@@ -87,21 +92,21 @@
       <input
         id="brokerUrl"
         type="text"
-        value="wss://2ec7c29478854652aefa31c92c09f792.s1.eu.hivemq.cloud:8884/mqtt"
+        placeholder="wss://YOUR_CLUSTER.hivemq.cloud:8884/mqtt"
         autocomplete="off"
       />
     </div>
     <div class="row">
       <label for="user">User</label>
-      <input id="user" type="text" value="test2" autocomplete="username" />
+      <input id="user" type="text" value="" autocomplete="username" />
     </div>
     <div class="row">
       <label for="pass">Pass</label>
-      <input id="pass" type="password" value="Aa123456" autocomplete="current-password" />
+      <input id="pass" type="password" value="" autocomplete="current-password" />
     </div>
     <div class="row">
       <label for="topic">Topic</label>
-      <input id="topic" type="text" value="mqtest/demo" autocomplete="off" />
+      <input id="topic" type="text" value="blackout/reboot/names" autocomplete="off" />
     </div>
     <div class="row">
       <label for="payload">Payload</label>
@@ -118,6 +123,7 @@
     <p id="status" class="disconnected">Disconnected</p>
     <div id="log"></div>
 
+    <script src="/mqtt-config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.3/dist/mqtt.min.js" crossorigin="anonymous"></script>
     <script>
       (function () {
@@ -127,6 +133,19 @@
         };
         var logEl = $("log");
         var statusEl = $("status");
+
+        var cfg = typeof window !== "undefined" ? window.BLACKOUT_MQTT_CONFIG : null;
+        if (cfg && cfg.host) {
+          $("brokerUrl").value =
+            "wss://" +
+            cfg.host +
+            ":" +
+            String(cfg.wsPort != null ? cfg.wsPort : 8884) +
+            (cfg.wsPath || "/mqtt");
+          if (cfg.username) $("user").value = cfg.username;
+          if (cfg.password) $("pass").value = cfg.password;
+          if (cfg.nameTopic) $("topic").value = cfg.nameTopic;
+        }
 
         function log(line) {
           var t = new Date().toISOString().slice(11, 23);

@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="/styles.css" />
   </head>
   <body class="page-desktop">
     <div class="dashboard">
@@ -19,7 +19,7 @@
           <div class="dashboard__map">
             <!-- Raster is embedded inside map-embedded.svg (pattern + base64 PNG); avoids broken remote asset / layering issues -->
             <img
-              src="map-embedded.svg"
+              src="/map-embedded.svg"
               alt=""
               width="1474"
               height="1024"
@@ -101,63 +101,88 @@
         </section>
       </div>
     </div>
+    <script
+      src="https://cdn.jsdelivr.net/npm/mqtt@5.10.3/dist/mqtt.min.js"
+      crossorigin="anonymous"
+    ></script>
+    <script src="/mqtt-config.js"></script>
+    <script src="/hivemq-client.js"></script>
     <script>
       (function () {
         var el = document.getElementById("desktop-names-list");
         if (!el) return;
 
-        function renderNames(names) {
-          if (!Array.isArray(names)) return;
+        var names = [];
+
+        function render() {
           el.textContent = names.length ? names.join("\n") : "—";
         }
 
-        function showOfflineHint() {
+        function payloadToUtf8(payload) {
+          if (payload == null) return "";
+          if (typeof payload === "string") return payload;
+          if (payload instanceof ArrayBuffer) {
+            return new TextDecoder("utf-8").decode(new Uint8Array(payload));
+          }
+          if (payload instanceof Uint8Array) {
+            return new TextDecoder("utf-8").decode(payload);
+          }
+          if (typeof payload.toString === "function") {
+            var s = payload.toString();
+            if (s.indexOf(",") === -1 || !/^\d/.test(s)) return s;
+          }
+          try {
+            return new TextDecoder("utf-8").decode(new Uint8Array(payload));
+          } catch (e) {
+            return String(payload);
+          }
+        }
+
+        function parseNameFromPayload(payload) {
+          var text = payloadToUtf8(payload);
+          var name = text.trim();
+          try {
+            var o = JSON.parse(text);
+            if (o && typeof o.name === "string") name = o.name.trim();
+          } catch (e) {}
+          return name;
+        }
+
+        if (typeof mqtt === "undefined") {
           el.textContent =
-            "无法连接名字服务。请在项目文件夹运行：npm start（不要用 npx serve 占 3000 端口）";
+            "无法加载 MQTT 库。请用 http(s) 打开本页，并检查网络能否访问 CDN。";
+          return;
         }
 
-        function showStaticServerHint() {
+        var B = window.BlackoutMQTT;
+        if (!B || !B.client) {
           el.textContent =
-            "当前 3000 是静态服务器（无 /api）。请关掉 npx serve，在项目目录执行：npm start";
+            "请在 mqtt-config.js 中填写 HiveMQ 用户名和密码（与手机相同）。跨设备只走 MQTT，无本机接口。";
+          return;
         }
 
-        fetch("/api/names", { cache: "no-store" })
-          .then(function (r) {
-            if (r.status === 404) {
-              showStaticServerHint();
-              return Promise.reject(new Error("404"));
-            }
-            if (!r.ok) throw new Error("bad");
-            return r.json();
-          })
-          .then(function (data) {
-            renderNames(data && data.names);
-          })
-          .catch(showOfflineHint);
+        var topic = window.BLACKOUT_MQTT_NAME_TOPIC || "blackout/reboot/names";
+        var client = B.client;
 
-        if (typeof EventSource !== "undefined") {
-          var es = new EventSource("/api/names/stream");
-          es.onmessage = function (ev) {
-            try {
-              var data = JSON.parse(ev.data);
-              if (data && Array.isArray(data.names)) renderNames(data.names);
-            } catch (e) {}
-          };
-          es.onerror = function () {
-            /* keep connection; browser will retry. Fallback poll if dead */
-          };
-        } else {
-          setInterval(function () {
-            fetch("/api/names", { cache: "no-store" })
-              .then(function (r) {
-                return r.json();
-              })
-              .then(function (data) {
-                renderNames(data && data.names);
-              })
-              .catch(function () {});
-          }, 1500);
+        el.textContent = "正在连接 HiveMQ…";
+
+        function onBrokerConnect() {
+          B.subscribe(topic, function (err) {
+            if (err) console.error("[desktop] subscribe:", err);
+          });
+          render();
         }
+
+        window.addEventListener("blackout-mqtt-connect", onBrokerConnect);
+        if (B.connected) onBrokerConnect();
+
+        client.on("message", function (recvTopic, payload) {
+          if (recvTopic !== topic) return;
+          var name = parseNameFromPayload(payload);
+          if (!name) return;
+          names.push(name);
+          render();
+        });
       })();
     </script>
   </body>

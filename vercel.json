@@ -1,0 +1,10 @@
+{
+  "installCommand": "npm install",
+  "buildCommand": "npm run build",
+  "outputDirectory": ".",
+  "rewrites": [
+    { "source": "/desktop", "destination": "/desktop.html" },
+    { "source": "/mobile", "destination": "/mobile.html" },
+    { "source": "/mqtest", "destination": "/MQtest.html" }
+  ]
+}
