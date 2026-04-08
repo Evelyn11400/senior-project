@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MQTT connection test (HiveMQ Cloud)</title>
+    <style>
+      :root {
+        font-family: system-ui, Segoe UI, sans-serif;
+        line-height: 1.45;
+      }
+      body {
+        max-width: 52rem;
+        margin: 1.5rem auto;
+        padding: 0 1rem;
+      }
+      h1 {
+        font-size: 1.25rem;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+        margin: 0.75rem 0;
+      }
+      label {
+        min-width: 5rem;
+      }
+      input[type="text"],
+      input[type="password"] {
+        flex: 1;
+        min-width: 12rem;
+        padding: 0.35rem 0.5rem;
+      }
+      button {
+        padding: 0.4rem 0.85rem;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+      #status {
+        font-weight: 600;
+        margin: 0.5rem 0;
+      }
+      #status.disconnected {
+        color: #666;
+      }
+      #status.connected {
+        color: #0a7;
+      }
+      #status.error {
+        color: #c22;
+      }
+      #log {
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        padding: 0.75rem;
+        min-height: 10rem;
+        max-height: 22rem;
+        overflow: auto;
+        background: #fafafa;
+        font-family: ui-monospace, Consolas, monospace;
+        font-size: 0.85rem;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .hint {
+        font-size: 0.85rem;
+        color: #555;
+        margin-top: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>MQTT test (browser uses WebSocket)</h1>
+    <p class="hint">
+      TCP TLS on port <strong>8883</strong> is for apps/devices, not the browser. This page uses
+      <strong>wss://…:8884/mqtt</strong> (HiveMQ Cloud WebSocket), which is the correct way to test
+      from HTML5.
+    </p>
+
+    <div class="row">
+      <label for="brokerUrl">URL</label>
+      <input
+        id="brokerUrl"
+        type="text"
+        value="wss://2ec7c29478854652aefa31c92c09f792.s1.eu.hivemq.cloud:8884/mqtt"
+        autocomplete="off"
+      />
+    </div>
+    <div class="row">
+      <label for="user">User</label>
+      <input id="user" type="text" value="test2" autocomplete="username" />
+    </div>
+    <div class="row">
+      <label for="pass">Pass</label>
+      <input id="pass" type="password" value="Aa123456" autocomplete="current-password" />
+    </div>
+    <div class="row">
+      <label for="topic">Topic</label>
+      <input id="topic" type="text" value="mqtest/demo" autocomplete="off" />
+    </div>
+    <div class="row">
+      <label for="payload">Payload</label>
+      <input id="payload" type="text" value="hello from MQtest" autocomplete="off" />
+    </div>
+
+    <div class="row">
+      <button type="button" id="btnConnect">Connect &amp; subscribe</button>
+      <button type="button" id="btnDisconnect" disabled>Disconnect</button>
+      <button type="button" id="btnPublish" disabled>Publish</button>
+      <button type="button" id="btnClear">Clear log</button>
+    </div>
+
+    <p id="status" class="disconnected">Disconnected</p>
+    <div id="log"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.3/dist/mqtt.min.js" crossorigin="anonymous"></script>
+    <script>
+      (function () {
+        var client = null;
+        var $ = function (id) {
+          return document.getElementById(id);
+        };
+        var logEl = $("log");
+        var statusEl = $("status");
+
+        function log(line) {
+          var t = new Date().toISOString().slice(11, 23);
+          logEl.textContent += "[" + t + "] " + line + "\n";
+          logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function setStatus(text, cls) {
+          statusEl.textContent = text;
+          statusEl.className = cls || "disconnected";
+        }
+
+        function setConnected(on) {
+          $("btnConnect").disabled = on;
+          $("btnDisconnect").disabled = !on;
+          $("btnPublish").disabled = !on;
+        }
+
+        $("btnClear").addEventListener("click", function () {
+          logEl.textContent = "";
+        });
+
+        $("btnConnect").addEventListener("click", function () {
+          var url = $("brokerUrl").value.trim();
+          var username = $("user").value.trim();
+          var password = $("pass").value;
+          var topic = $("topic").value.trim() || "mqtest/demo";
+
+          if (!url) {
+            log("Missing broker URL.");
+            return;
+          }
+          if (typeof mqtt === "undefined") {
+            log("mqtt library failed to load.");
+            return;
+          }
+
+          if (client) {
+            try {
+              client.end(true);
+            } catch (e) {}
+            client = null;
+          }
+
+          var clientId = "mqtest-web-" + Math.random().toString(36).slice(2) + "-" + Date.now();
+          setStatus("Connecting…", "disconnected");
+          log("Connecting to " + url + " as " + clientId);
+
+          client = mqtt.connect(url, {
+            username: username || undefined,
+            password: password || undefined,
+            clientId: clientId,
+            clean: true,
+            reconnectPeriod: 0,
+            keepalive: 60,
+          });
+
+          client.on("connect", function () {
+            setStatus("Connected", "connected");
+            setConnected(true);
+            log("CONNECTED");
+
+            client.subscribe(topic, { qos: 1 }, function (err, granted) {
+              if (err) {
+                log("Subscribe error: " + (err && err.message ? err.message : String(err)));
+                return;
+              }
+              log("Subscribed: " + JSON.stringify(granted));
+            });
+          });
+
+          client.on("message", function (t, payload) {
+            log("RECV topic=" + t + " payload=" + payload.toString());
+          });
+
+          client.on("error", function (err) {
+            log("ERROR: " + (err && err.message ? err.message : String(err)));
+            setStatus("Error (see log)", "error");
+          });
+
+          client.on("close", function () {
+            log("Connection closed");
+            setStatus("Disconnected", "disconnected");
+            setConnected(false);
+            client = null;
+          });
+
+          client.on("offline", function () {
+            log("Offline");
+          });
+        });
+
+        $("btnDisconnect").addEventListener("click", function () {
+          if (client) {
+            client.end(true);
+            client = null;
+          }
+          setConnected(false);
+          setStatus("Disconnected", "disconnected");
+        });
+
+        $("btnPublish").addEventListener("click", function () {
+          if (!client || !client.connected) {
+            log("Not connected.");
+            return;
+          }
+          var topic = $("topic").value.trim() || "mqtest/demo";
+          var payload = $("payload").value;
+          var msg = payload + " @ " + new Date().toISOString();
+          client.publish(topic, msg, { qos: 1 }, function (err) {
+            if (err) {
+              log("Publish error: " + (err && err.message ? err.message : String(err)));
+            } else {
+              log("SENT topic=" + topic + " payload=" + msg);
+            }
+          });
+        });
+      })();
+    </script>
+  </body>
+</html>
