@@ -1,6 +1,8 @@
 # Local MQTT credentials (never commit)
 mqtt-config.js
 
+node_modules/
+
 # OS / editor
 Thumbs.db
 Desktop.ini
