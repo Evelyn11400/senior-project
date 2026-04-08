@@ -294,7 +294,8 @@
     }
 
     /* ----- View 1: Splash ----- */
-    #view-splash {
+    /* Flex only when active so #view-splash does not override .view { display: none } */
+    #view-splash.view.active {
       display: flex;
       flex-direction: column;
       align-items: center;
