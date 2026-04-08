@@ -3,169 +3,493 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>MQTT connection test (HiveMQ Cloud)</title>
+    <title>MQTT chat test (HiveMQ WebSocket)</title>
     <style>
       :root {
-        font-family: system-ui, Segoe UI, sans-serif;
+        --bg: #0f1419;
+        --surface: #1a2332;
+        --border: #2d3a4d;
+        --text: #e7ecf3;
+        --muted: #8b9cb3;
+        --in-bg: #243044;
+        --out-bg: #1e3d32;
+        --out-accent: #3ecf8e;
+        --err: #f07178;
+        --warn: #e6c07b;
+        --ok: #7fd962;
+        font-family: system-ui, "Segoe UI", sans-serif;
         line-height: 1.45;
       }
+      * {
+        box-sizing: border-box;
+      }
       body {
-        max-width: 52rem;
-        margin: 1.5rem auto;
-        padding: 0 1rem;
+        margin: 0;
+        min-height: 100dvh;
+        background: var(--bg);
+        color: var(--text);
+        display: flex;
+        flex-direction: column;
+        max-width: 42rem;
+        margin-inline: auto;
       }
-      h1 {
-        font-size: 1.25rem;
+      header {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
       }
-      .row {
+      header h1 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin: 0 0 0.35rem;
+      }
+      .hint {
+        font-size: 0.75rem;
+        color: var(--muted);
+        margin: 0;
+      }
+      details.settings {
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+      }
+      details.settings > summary {
+        padding: 0.6rem 1rem;
+        cursor: pointer;
+        font-size: 0.85rem;
+        color: var(--muted);
+        list-style: none;
+      }
+      details.settings > summary::-webkit-details-marker {
+        display: none;
+      }
+      details.settings[open] > summary {
+        color: var(--text);
+      }
+      .settings-body {
+        padding: 0 1rem 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+      }
+      .field label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+      }
+      .field input {
+        padding: 0.45rem 0.55rem;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--bg);
+        color: var(--text);
+        font-size: 0.9rem;
+      }
+      .btn-row {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.5rem;
-        align-items: center;
-        margin: 0.75rem 0;
-      }
-      label {
-        min-width: 5rem;
-      }
-      input[type="text"],
-      input[type="password"] {
-        flex: 1;
-        min-width: 12rem;
-        padding: 0.35rem 0.5rem;
+        gap: 0.45rem;
+        margin-top: 0.35rem;
       }
       button {
-        padding: 0.4rem 0.85rem;
+        padding: 0.45rem 0.75rem;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: var(--bg);
+        color: var(--text);
+        font-size: 0.85rem;
         cursor: pointer;
       }
+      button:hover:not(:disabled) {
+        border-color: var(--muted);
+      }
       button:disabled {
-        opacity: 0.55;
+        opacity: 0.45;
         cursor: not-allowed;
       }
-      #status {
+      button.primary {
+        background: #2d4a3e;
+        border-color: #3d6b5a;
+      }
+      .status-bar {
+        padding: 0.5rem 1rem;
+        font-size: 0.8rem;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem 1rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg);
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.2rem 0.55rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
         font-weight: 600;
-        margin: 0.5rem 0;
       }
-      #status.disconnected {
-        color: #666;
+      .pill.disconnected {
+        background: #333;
+        color: var(--muted);
       }
-      #status.connected {
-        color: #0a7;
+      .pill.connecting {
+        background: #3a3520;
+        color: var(--warn);
       }
-      #status.error {
-        color: #c22;
+      .pill.connected {
+        background: #1e3328;
+        color: var(--ok);
       }
-      #log {
-        border: 1px solid #ccc;
-        border-radius: 6px;
-        padding: 0.75rem;
-        min-height: 10rem;
-        max-height: 22rem;
-        overflow: auto;
-        background: #fafafa;
+      .pill.error {
+        background: #3a2224;
+        color: var(--err);
+      }
+      .pill i {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+        opacity: 0.9;
+      }
+      .status-detail {
+        flex: 1;
+        min-width: 12rem;
+        color: var(--muted);
         font-family: ui-monospace, Consolas, monospace;
-        font-size: 0.85rem;
+        font-size: 0.72rem;
+        word-break: break-all;
+      }
+      #chat {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0.75rem 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+      }
+      .msg {
+        max-width: 88%;
+        padding: 0.55rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.9rem;
         white-space: pre-wrap;
         word-break: break-word;
       }
-      .hint {
-        font-size: 0.85rem;
-        color: #555;
-        margin-top: 1rem;
+      .msg.in {
+        align-self: flex-start;
+        background: var(--in-bg);
+        border: 1px solid var(--border);
+        border-bottom-left-radius: 4px;
+      }
+      .msg.out {
+        align-self: flex-end;
+        background: var(--out-bg);
+        border: 1px solid rgba(62, 207, 142, 0.35);
+        border-bottom-right-radius: 4px;
+      }
+      .msg .meta {
+        font-size: 0.65rem;
+        color: var(--muted);
+        margin-bottom: 0.25rem;
+        font-family: ui-monospace, Consolas, monospace;
+      }
+      .msg.system {
+        align-self: center;
+        max-width: 95%;
+        background: transparent;
+        border: 1px dashed var(--border);
+        color: var(--muted);
+        font-size: 0.8rem;
+        text-align: center;
+      }
+      .composer {
+        padding: 0.65rem 1rem 0.75rem;
+        border-top: 1px solid var(--border);
+        background: var(--surface);
+        display: flex;
+        gap: 0.5rem;
+        align-items: flex-end;
+      }
+      .composer textarea {
+        flex: 1;
+        min-height: 2.5rem;
+        max-height: 8rem;
+        resize: vertical;
+        padding: 0.5rem 0.65rem;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--bg);
+        color: var(--text);
+        font-size: 0.9rem;
+        font-family: inherit;
+      }
+      .composer button.primary {
+        flex-shrink: 0;
+        height: 2.5rem;
+      }
+      details.debug {
+        border-top: 1px solid var(--border);
+        background: #0a0d11;
+      }
+      details.debug > summary {
+        padding: 0.45rem 1rem;
+        font-size: 0.75rem;
+        color: var(--muted);
+        cursor: pointer;
+      }
+      details.debug[open] > summary {
+        color: var(--warn);
+      }
+      #debugLog {
+        margin: 0;
+        padding: 0 1rem 0.75rem;
+        max-height: min(28vh, 220px);
+        overflow-y: auto;
+        font-family: ui-monospace, Consolas, monospace;
+        font-size: 0.68rem;
+        line-height: 1.5;
+        color: #b8c5d6;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .debug-line.err {
+        color: var(--err);
+      }
+      .debug-line.warn {
+        color: var(--warn);
+      }
+      .debug-line.ok {
+        color: #98c379;
       }
     </style>
   </head>
   <body>
-    <h1>MQTT test (browser uses WebSocket)</h1>
-    <p class="hint">
-      TCP TLS on port <strong>8883</strong> is for native apps, not the browser. This page uses
-      <strong>wss://…:8884/mqtt</strong> (HiveMQ Cloud WebSocket).
-      <strong>Phone and PC do not need the same Wi‑Fi</strong> — only internet and the same broker
-      credentials. Serve this page over <strong>http(s)</strong> (not <code>file://</code>).
-    </p>
-    <p class="hint">
-      If <code>mqtt-config.js</code> exists next to this file, fields below are filled from it when
-      you load the page (still use Live Server / a static host).
-    </p>
+    <header>
+      <h1>MQTT chat test</h1>
+      <p class="hint">
+        Browser needs <strong>WebSocket</strong> (<code>wss://…:8884/mqtt</code> on HiveMQ Cloud). Use
+        http(s), not <code>file://</code>. Same topic = shared room; open two tabs or two devices to chat.
+      </p>
+    </header>
 
-    <div class="row">
-      <label for="brokerUrl">URL</label>
-      <input
-        id="brokerUrl"
-        type="text"
-        placeholder="wss://YOUR_CLUSTER.hivemq.cloud:8884/mqtt"
-        autocomplete="off"
-      />
-    </div>
-    <div class="row">
-      <label for="user">User</label>
-      <input id="user" type="text" value="" autocomplete="username" />
-    </div>
-    <div class="row">
-      <label for="pass">Pass</label>
-      <input id="pass" type="password" value="" autocomplete="current-password" />
-    </div>
-    <div class="row">
-      <label for="topic">Topic</label>
-      <input id="topic" type="text" value="blackout/reboot/names" autocomplete="off" />
-    </div>
-    <div class="row">
-      <label for="payload">Payload</label>
-      <input id="payload" type="text" value="hello from MQtest" autocomplete="off" />
+    <details class="settings">
+      <summary>Connection &amp; topic</summary>
+      <div class="settings-body">
+        <div class="field">
+          <label for="brokerUrl">Broker URL</label>
+          <input
+            id="brokerUrl"
+            type="text"
+            placeholder="wss://YOUR_CLUSTER.hivemq.cloud:8884/mqtt"
+            autocomplete="off"
+          />
+        </div>
+        <div class="field">
+          <label for="user">Username</label>
+          <input id="user" type="text" autocomplete="username" />
+        </div>
+        <div class="field">
+          <label for="pass">Password</label>
+          <input id="pass" type="password" autocomplete="current-password" />
+        </div>
+        <div class="field">
+          <label for="topic">Topic (subscribe + publish)</label>
+          <input id="topic" type="text" value="blackout/reboot/names" autocomplete="off" />
+        </div>
+        <div class="btn-row">
+          <button type="button" class="primary" id="btnConnect">Connect</button>
+          <button type="button" id="btnDisconnect" disabled>Disconnect</button>
+          <button type="button" id="btnClearChat">Clear chat</button>
+        </div>
+      </div>
+    </details>
+
+    <div class="status-bar">
+      <span class="pill disconnected" id="pill"><i></i> <span id="pillText">Disconnected</span></span>
+      <span class="status-detail" id="statusDetail">Not connected</span>
     </div>
 
-    <div class="row">
-      <button type="button" id="btnConnect">Connect &amp; subscribe</button>
-      <button type="button" id="btnDisconnect" disabled>Disconnect</button>
-      <button type="button" id="btnPublish" disabled>Publish</button>
-      <button type="button" id="btnClear">Clear log</button>
+    <div id="chat" aria-live="polite"></div>
+
+    <div class="composer">
+      <textarea
+        id="composerInput"
+        rows="2"
+        placeholder="Type a message and send (Enter — Shift+Enter for newline)"
+        disabled
+      ></textarea>
+      <button type="button" class="primary" id="btnSend" disabled>Send</button>
     </div>
 
-    <p id="status" class="disconnected">Disconnected</p>
-    <div id="log"></div>
+    <details class="debug" open>
+      <summary>Technical log (connection errors, MQTT events)</summary>
+      <pre id="debugLog"></pre>
+    </details>
 
     <script src="/mqtt-config.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.3/dist/mqtt.min.js" crossorigin="anonymous"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/mqtt@5.10.3/dist/mqtt.min.js"
+      crossorigin="anonymous"
+    ></script>
     <script>
       (function () {
         var client = null;
+        var clientId = "";
         var $ = function (id) {
           return document.getElementById(id);
         };
-        var logEl = $("log");
-        var statusEl = $("status");
+        var chatEl = $("chat");
+        var debugEl = $("debugLog");
+        var pillEl = $("pill");
+        var pillTextEl = $("pillText");
+        var statusDetailEl = $("statusDetail");
+        var composerInput = $("composerInput");
 
-        var cfg = typeof window !== "undefined" ? window.BLACKOUT_MQTT_CONFIG : null;
-        if (cfg && cfg.host) {
-          $("brokerUrl").value =
-            "wss://" +
-            cfg.host +
-            ":" +
-            String(cfg.wsPort != null ? cfg.wsPort : 8884) +
-            (cfg.wsPath || "/mqtt");
-          if (cfg.username) $("user").value = cfg.username;
-          if (cfg.password) $("pass").value = cfg.password;
-          if (cfg.nameTopic) $("topic").value = cfg.nameTopic;
+        function applyConfig() {
+          var cfg = typeof window !== "undefined" ? window.BLACKOUT_MQTT_CONFIG : null;
+          if (cfg && cfg.host) {
+            $("brokerUrl").value =
+              "wss://" +
+              cfg.host +
+              ":" +
+              String(cfg.wsPort != null ? cfg.wsPort : 8884) +
+              (cfg.wsPath || "/mqtt");
+            if (cfg.username) $("user").value = cfg.username;
+            if (cfg.password) $("pass").value = cfg.password;
+            if (cfg.nameTopic) $("topic").value = cfg.nameTopic;
+          }
+        }
+        applyConfig();
+
+        function timeStr() {
+          return new Date().toISOString().slice(11, 23);
         }
 
-        function log(line) {
-          var t = new Date().toISOString().slice(11, 23);
-          logEl.textContent += "[" + t + "] " + line + "\n";
-          logEl.scrollTop = logEl.scrollHeight;
+        function redactUrl(u) {
+          try {
+            var x = new URL(u);
+            if (x.password) x.password = "***";
+            if (x.username) x.username = x.username ? "***" : "";
+            return x.toString();
+          } catch (e) {
+            return u.replace(/:[^:@/]+@/, ":***@");
+          }
         }
 
-        function setStatus(text, cls) {
-          statusEl.textContent = text;
-          statusEl.className = cls || "disconnected";
+        function debugLine(msg, kind) {
+          var line = document.createElement("div");
+          line.className = "debug-line" + (kind ? " " + kind : "");
+          line.textContent = "[" + timeStr() + "] " + msg;
+          debugEl.appendChild(line);
+          debugEl.scrollTop = debugEl.scrollHeight;
+        }
+
+        function setPill(state, detail) {
+          pillEl.className = "pill " + state;
+          pillTextEl.textContent =
+            state === "connected"
+              ? "Connected"
+              : state === "connecting"
+                ? "Connecting…"
+                : state === "error"
+                  ? "Error"
+                  : "Disconnected";
+          if (detail != null) statusDetailEl.textContent = detail;
         }
 
         function setConnected(on) {
           $("btnConnect").disabled = on;
           $("btnDisconnect").disabled = !on;
-          $("btnPublish").disabled = !on;
+          $("btnSend").disabled = !on;
+          composerInput.disabled = !on;
         }
 
-        $("btnClear").addEventListener("click", function () {
-          logEl.textContent = "";
+        function errString(err) {
+          if (!err) return "(no message)";
+          if (typeof err === "string") return err;
+          var parts = [];
+          if (err.message) parts.push(err.message);
+          if (err.code != null) parts.push("code=" + err.code);
+          if (err.errno != null) parts.push("errno=" + err.errno);
+          if (err.stack && parts.length < 2) parts.push(err.stack.split("\n")[0]);
+          return parts.length ? parts.join(" | ") : String(err);
+        }
+
+        function appendChat(kind, meta, body) {
+          var div = document.createElement("div");
+          div.className = "msg " + kind;
+          if (kind === "system") {
+            div.textContent = body;
+          } else {
+            var m = document.createElement("div");
+            m.className = "meta";
+            m.textContent = meta;
+            div.appendChild(m);
+            var b = document.createElement("div");
+            b.textContent = body;
+            div.appendChild(b);
+          }
+          chatEl.appendChild(div);
+          chatEl.scrollTop = chatEl.scrollHeight;
+        }
+
+        function logStartup() {
+          var loc = window.location.protocol;
+          debugLine(
+            "Page: " + loc + "//" + window.location.host + window.location.pathname,
+            loc === "file:" ? "warn" : "ok"
+          );
+          if (loc === "file:")
+            debugLine("file:// often blocks or breaks scripts — use Live Server or a real URL.", "warn");
+          if (typeof mqtt === "undefined")
+            debugLine("mqtt.js failed to load from CDN (check network / adblock).", "err");
+          else debugLine("mqtt.js loaded (v5 browser bundle).", "ok");
+          var cfg = window.BLACKOUT_MQTT_CONFIG;
+          if (cfg && cfg.host)
+            debugLine("mqtt-config.js: host present, wsPort=" + (cfg.wsPort || 8884), "ok");
+          else debugLine("No mqtt-config.js or empty host — fill Broker URL manually.", "warn");
+        }
+        logStartup();
+
+        $("btnClearChat").addEventListener("click", function () {
+          chatEl.innerHTML = "";
+          appendChat("system", "", "Chat cleared.");
+        });
+
+        function doSend() {
+          if (!client || !client.connected) {
+            debugLine("Send blocked: not connected.", "warn");
+            return;
+          }
+          var topic = $("topic").value.trim() || "mqtest/demo";
+          var payload = composerInput.value;
+          if (!payload.trim()) return;
+
+          client.publish(topic, payload, { qos: 1 }, function (err) {
+            if (err) {
+              debugLine("PUBLISH error: " + errString(err), "err");
+              setPill("error", errString(err));
+            } else {
+              debugLine("PUBLISH ok topic=" + topic + " bytes=" + payload.length, "ok");
+              appendChat("out", "You · " + topic, payload);
+              composerInput.value = "";
+            }
+          });
+        }
+
+        $("btnSend").addEventListener("click", doSend);
+        composerInput.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            doSend();
+          }
         });
 
         $("btnConnect").addEventListener("click", function () {
@@ -175,11 +499,11 @@
           var topic = $("topic").value.trim() || "mqtest/demo";
 
           if (!url) {
-            log("Missing broker URL.");
+            debugLine("Connect aborted: empty broker URL.", "err");
             return;
           }
           if (typeof mqtt === "undefined") {
-            log("mqtt library failed to load.");
+            debugLine("Connect aborted: mqtt not loaded.", "err");
             return;
           }
 
@@ -190,9 +514,11 @@
             client = null;
           }
 
-          var clientId = "mqtest-web-" + Math.random().toString(36).slice(2) + "-" + Date.now();
-          setStatus("Connecting…", "disconnected");
-          log("Connecting to " + url + " as " + clientId);
+          clientId = "mqtest-" + Math.random().toString(36).slice(2, 10) + "-" + Date.now();
+          setPill("connecting", redactUrl(url) + " · clientId=" + clientId);
+          debugLine("CONNECT attempt → " + redactUrl(url), "ok");
+          debugLine("Auth: username=" + (username ? '"' + username + '"' : "(none)") + " password=" + (password ? "(set)" : "(empty)"), username ? "ok" : "warn");
+          if (!username || !password) debugLine("HiveMQ Cloud usually requires both; empty auth often fails with connack 5 (not authorized).", "warn");
 
           client = mqtt.connect(url, {
             username: username || undefined,
@@ -201,68 +527,87 @@
             clean: true,
             reconnectPeriod: 0,
             keepalive: 60,
+            connectTimeout: 30 * 1000,
           });
 
-          client.on("connect", function () {
-            setStatus("Connected", "connected");
+          client.on("connect", function (connack) {
+            setPill("connected", "clientId=" + clientId + " · topic=" + topic);
             setConnected(true);
-            log("CONNECTED");
+            var extra = "";
+            if (connack && typeof connack === "object") {
+              try {
+                extra =
+                  " reasonCode=" +
+                  connack.reasonCode +
+                  " sessionPresent=" +
+                  connack.sessionPresent;
+              } catch (e) {
+                extra = " " + JSON.stringify(connack);
+              }
+            }
+            debugLine("EVENT connect" + extra, "ok");
+            appendChat("system", "", "Connected — messages on topic: " + topic);
 
             client.subscribe(topic, { qos: 1 }, function (err, granted) {
               if (err) {
-                log("Subscribe error: " + (err && err.message ? err.message : String(err)));
-                return;
+                debugLine("SUBSCRIBE error: " + errString(err), "err");
+                setPill("error", errString(err));
+              } else {
+                debugLine("SUBSCRIBE ok: " + JSON.stringify(granted), "ok");
               }
-              log("Subscribed: " + JSON.stringify(granted));
             });
           });
 
-          client.on("message", function (t, payload) {
-            log("RECV topic=" + t + " payload=" + payload.toString());
+          client.on("message", function (t, payload, packet) {
+            var text = payload.toString();
+            var qos = packet && packet.qos != null ? " qos" + packet.qos : "";
+            debugLine("MESSAGE in topic=" + t + qos + " len=" + text.length, "ok");
+            appendChat("in", "Topic: " + t, text);
           });
 
           client.on("error", function (err) {
-            log("ERROR: " + (err && err.message ? err.message : String(err)));
-            setStatus("Error (see log)", "error");
+            debugLine("EVENT error: " + errString(err), "err");
+            setPill("error", errString(err));
           });
 
           client.on("close", function () {
-            log("Connection closed");
-            setStatus("Disconnected", "disconnected");
+            debugLine("EVENT close (TCP/WebSocket closed)", "warn");
+            setPill("disconnected", "Connection closed");
             setConnected(false);
             client = null;
           });
 
           client.on("offline", function () {
-            log("Offline");
+            debugLine("EVENT offline", "warn");
+          });
+
+          client.on("end", function () {
+            debugLine("EVENT end (client ended)", "warn");
+          });
+
+          client.on("disconnect", function (packet) {
+            debugLine(
+              "EVENT disconnect" +
+                (packet && packet.reasonCode != null ? " reasonCode=" + packet.reasonCode : ""),
+              "warn"
+            );
           });
         });
 
         $("btnDisconnect").addEventListener("click", function () {
           if (client) {
-            client.end(true);
+            try {
+              client.end(true);
+            } catch (e) {}
             client = null;
           }
           setConnected(false);
-          setStatus("Disconnected", "disconnected");
+          setPill("disconnected", "Disconnected by user");
+          debugLine("Disconnected by user.", "ok");
+          appendChat("system", "", "Disconnected.");
         });
 
-        $("btnPublish").addEventListener("click", function () {
-          if (!client || !client.connected) {
-            log("Not connected.");
-            return;
-          }
-          var topic = $("topic").value.trim() || "mqtest/demo";
-          var payload = $("payload").value;
-          var msg = payload + " @ " + new Date().toISOString();
-          client.publish(topic, msg, { qos: 1 }, function (err) {
-            if (err) {
-              log("Publish error: " + (err && err.message ? err.message : String(err)));
-            } else {
-              log("SENT topic=" + topic + " payload=" + msg);
-            }
-          });
-        });
+        appendChat("system", "", "Open settings, connect, then chat here. Incoming lines appear on the left, yours on the right.");
       })();
     </script>
   </body>
