@@ -83,7 +83,7 @@ Open **`MQtest.html`** with Live Server (or your static host). Click **Connect &
    The Vercel build (`scripts/vercel-build.cjs`) copies HTML/CSS/JS/SVG into **`public/`** and writes **`public/mqtt-config.js`** from env. That folder has **no** `package.json`, so Vercel treats it as **static files** (avoids “No entrypoint” errors). Locally, `npm run build` **does nothing** unless `VERCEL=1`; keep using **`mqtt-config.js`** in the repo root for local dev.
 4. **Redeploy** after saving env vars.
 
-**Vercel settings:** **Output Directory** must be **`public`** (same as `vercel.json`). If the dashboard overrides it to `.` or `dist`, fix it or clear the override so the git config wins.
+**Vercel settings:** **Output Directory** must be **`public`**. **Framework Preset** must be **Other** (this repo sets `"framework": null` in `vercel.json` so Vercel serves static files from `public/` instead of looking for a Node `index.js`). If the dashboard overrides Framework or Output Directory, clear those overrides or match `vercel.json`.
 
 **Live URLs** (replace with your deployment domain):
 
