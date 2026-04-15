@@ -37,6 +37,7 @@
               <path
                 id="map-build-region"
                 fill="#000000"
+                fill-opacity="0"
                 fill-rule="evenodd"
                 d="M228 335L164 368.5L204.5 361L238 368.5L243 408.5L213 455L228 477.5L256 530L270.5 536L305 556L347.5 580.5C347.5 583.833 345.5 594.8 337.5 612C329.5 629.2 340.833 635.167 347.5 636L379.5 681.5L389.5 755L419 816.5L413.5 771.5L432 737.5H444.5L457.5 701L490.5 681.5L486 636L389.5 570H347.5L326.5 556L290 530L275.5 518L283.5 488.5L305 477.5H347.5L397 415L444.5 387L419 373.5L413.5 397.5L370 408.5L347.5 387L379.5 342.5L347.5 351L305 342.5L228 335Z M584.5 514L629.5 470L754.5 491.5L770.5 450.5H789L794.5 418.5L770.5 404L739 438H717L683 418.5C671.333 423 647 429.3 643 418.5C639 407.7 679 398.333 699.5 395L760.5 352.5L857 345.5V327L884 315.5L966.5 320.5L1174 335L1198 352.5L1181.5 366H1166L1174 390.5V404L1153.5 385.5L1158.5 361H1139H1097L1087.5 390.5L1123.5 409L1097 450.5L1078.5 432L1067 450.5L1097 491.5L1067 514L1029 523.5L1057 556.5L1041.5 568.5L1009.5 544L979.5 514L942.5 535L932.5 575L915 514L875.5 505L820 481L825 505L857 514L830.5 535L808 544L784 481L760.5 491.5L784 544C792.667 550.5 814.1 563.5 830.5 563.5C846.9 563.5 809.667 598.5 789 616L770.5 671.5L746 735.5H717L703 678C699.833 650.5 692.7 593.4 689.5 585C686.3 576.6 652.5 574.833 636 575C625.333 577.667 601.3 580.1 590.5 568.5C579.7 556.9 582 527.333 584.5 514Z"
               />
@@ -193,6 +194,22 @@
           return name;
         }
 
+        function parseStationOwnerFromBuildPayload(payload) {
+          var text = payloadToUtf8(payload);
+          try {
+            var o = JSON.parse(text);
+            if (o && typeof o.name === "string" && o.name.trim())
+              return o.name.trim();
+          } catch (e) {}
+          return "";
+        }
+
+        function stationLabelText(owner) {
+          var base = (owner || "").trim() || "Someone";
+          if (base.length > 32) base = base.slice(0, 29) + "…";
+          return base + "'s station";
+        }
+
         if (typeof mqtt === "undefined") {
           setMqttPill("unavailable", "mqtt.js not loaded");
           el.textContent =
@@ -326,12 +343,26 @@
             x = pt.x;
             y = pt.y;
           }
-          var c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          var owner = parseStationOwnerFromBuildPayload(payload);
+          var labelStr = stationLabelText(owner);
+          var r = 3.5;
+          var ns = "http://www.w3.org/2000/svg";
+          var g = document.createElementNS(ns, "g");
+          g.setAttribute("class", "map-marker-group");
+          var textEl = document.createElementNS(ns, "text");
+          textEl.setAttribute("class", "map-marker-label");
+          textEl.setAttribute("x", String(x));
+          textEl.setAttribute("y", String(y - r - 5));
+          textEl.setAttribute("text-anchor", "middle");
+          textEl.appendChild(document.createTextNode(labelStr));
+          var c = document.createElementNS(ns, "circle");
           c.setAttribute("cx", String(x));
           c.setAttribute("cy", String(y));
-          c.setAttribute("r", "7");
+          c.setAttribute("r", String(r));
           c.setAttribute("fill", "#F69E7B");
-          markersG.appendChild(c);
+          g.appendChild(textEl);
+          g.appendChild(c);
+          markersG.appendChild(g);
         }
 
         function onBrokerConnect() {

@@ -958,7 +958,15 @@
         var B = window.BlackoutMQTT;
         var t = window.BLACKOUT_BUILD_TOPIC || "blackout/reboot/build";
         if (!B || typeof B.publish !== "function" || !B.client) return;
-        var payload = JSON.stringify({ action: "build", t: Date.now() });
+        var nm = "";
+        try {
+          nm = (localStorage.getItem("blackout-reboot-name") || "").trim();
+        } catch (e) {}
+        var payload = JSON.stringify({
+          action: "build",
+          t: Date.now(),
+          name: nm || undefined,
+        });
         B.publish(t, payload, { qos: 1 }, function (err) {
           if (err) console.warn("[mobile] build publish:", err);
         });
