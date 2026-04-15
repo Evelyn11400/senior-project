@@ -60,6 +60,19 @@ body {
   transform-origin: center center;
 }
 
+/* Hit-test outline: same geometry as overlay, sits under the raster map (invisible). */
+.dashboard__map-build-hit {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+  z-index: 0;
+  pointer-events: none;
+}
+
 .dashboard__map img {
   position: absolute;
   left: 0;
@@ -70,7 +83,7 @@ body {
   object-fit: cover;
   object-position: center;
   filter: drop-shadow(0 0 10px #ffffff);
-  z-index: 0;
+  z-index: 1;
 }
 
 /* SVG stacked on the image only — same box as img, same slice as object-fit: cover; transparent except markers/paths */
@@ -82,7 +95,7 @@ body {
   height: 100%;
   display: block;
   overflow: visible;
-  z-index: 1;
+  z-index: 2;
   pointer-events: none;
   fill: none;
   background: none;
