@@ -752,7 +752,7 @@
       <div class="actions-section">
         <div class="title">Actions</div>
         <div class="actions-buttons">
-          <button type="button">Build Station</button>
+          <button type="button" id="btn-build-station">Build Station</button>
           <button type="button">Repair Station</button>
         </div>
       </div>
@@ -950,5 +950,20 @@
   <script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.3/dist/mqtt.min.js" crossorigin="anonymous"></script>
   <script src="/mqtt-config.js"></script>
   <script src="/hivemq-client.js"></script>
+  <script>
+    (function () {
+      var btn = document.getElementById("btn-build-station");
+      if (!btn) return;
+      btn.addEventListener("click", function () {
+        var B = window.BlackoutMQTT;
+        var t = window.BLACKOUT_BUILD_TOPIC || "blackout/reboot/build";
+        if (!B || typeof B.publish !== "function" || !B.client) return;
+        var payload = JSON.stringify({ action: "build", t: Date.now() });
+        B.publish(t, payload, { qos: 1 }, function (err) {
+          if (err) console.warn("[mobile] build publish:", err);
+        });
+      });
+    })();
+  </script>
 </body>
 </html>

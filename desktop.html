@@ -194,13 +194,50 @@
         }
 
         var topic = window.BLACKOUT_MQTT_NAME_TOPIC || "blackout/reboot/names";
+        var buildTopic = window.BLACKOUT_BUILD_TOPIC || "blackout/reboot/build";
         var client = B.client;
+        var markersG = document.getElementById("map-markers");
 
         el.textContent = "正在连接 HiveMQ…";
 
+        function addBuildMarkerDot(payload) {
+          if (!markersG) return;
+          var margin = 48;
+          var maxX = 1474 - margin;
+          var maxY = 1024 - margin;
+          var x;
+          var y;
+          try {
+            var o = JSON.parse(payloadToUtf8(payload));
+            if (
+              o &&
+              typeof o.x === "number" &&
+              typeof o.y === "number" &&
+              isFinite(o.x) &&
+              isFinite(o.y)
+            ) {
+              x = Math.max(margin, Math.min(maxX, o.x));
+              y = Math.max(margin, Math.min(maxY, o.y));
+            }
+          } catch (e) {}
+          if (x == null) {
+            x = margin + Math.random() * (maxX - margin);
+            y = margin + Math.random() * (maxY - margin);
+          }
+          var c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          c.setAttribute("cx", String(x));
+          c.setAttribute("cy", String(y));
+          c.setAttribute("r", "7");
+          c.setAttribute("fill", "#F69E7B");
+          markersG.appendChild(c);
+        }
+
         function onBrokerConnect() {
           B.subscribe(topic, function (err) {
-            if (err) console.error("[desktop] subscribe:", err);
+            if (err) console.error("[desktop] subscribe names:", err);
+          });
+          B.subscribe(buildTopic, function (err) {
+            if (err) console.error("[desktop] subscribe build:", err);
           });
           render();
         }
@@ -209,6 +246,10 @@
         if (B.connected) onBrokerConnect();
 
         client.on("message", function (recvTopic, payload) {
+          if (recvTopic === buildTopic) {
+            addBuildMarkerDot(payload);
+            return;
+          }
           if (recvTopic !== topic) return;
           var name = parseNameFromPayload(payload);
           if (!name) return;

@@ -2,6 +2,7 @@
  * Shared MQTT (HiveMQ) for mobile + desktop pages.
  * Cross-device traffic uses the broker only — no local /api or other app backend.
  * Names: publish/subscribe BLACKOUT_MQTT_NAME_TOPIC (default blackout/reboot/names).
+ * Build markers: topic BLACKOUT_BUILD_TOPIC (default blackout/reboot/build).
  *
  * If `mqtt-config.js` sets `window.BLACKOUT_MQTT_CONFIG`, non-empty fields override these
  * defaults (same broker/credentials as MQtest.html).
@@ -35,6 +36,7 @@
     password: "Aa123456",
     clientId: "",
     nameTopic: "blackout/reboot/names",
+    buildTopic: "blackout/reboot/build",
   };
 
   function mergeMqttConfig() {
@@ -56,8 +58,10 @@
 
   var cfg = mergeMqttConfig();
   var NAME_TOPIC = cfg.nameTopic || "blackout/reboot/names";
+  var BUILD_TOPIC = cfg.buildTopic || "blackout/reboot/build";
   if (typeof window !== "undefined") {
     window.BLACKOUT_MQTT_NAME_TOPIC = NAME_TOPIC;
+    window.BLACKOUT_BUILD_TOPIC = BUILD_TOPIC;
   }
 
   function attachStub() {
