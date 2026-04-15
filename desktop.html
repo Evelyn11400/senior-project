@@ -200,6 +200,56 @@
 
         el.textContent = "正在连接 HiveMQ…";
 
+        /**
+         * Land / buildable regions in the same coordinate system as the overlay SVG
+         * (viewBox 0 0 1474 1024). Trace outlines in Figma/Illustrator or sample from
+         * GeoJSON projected to this space, then paste vertices here. Each polygon is
+         * a closed ring (first point need not repeat last). Empty = random anywhere
+         * in the padded viewBox (old behavior).
+         */
+        var BUILDABLE_POLYGONS = [
+          // Example (replace with your real outline):
+          // [{ x: 400, y: 300 }, { x: 900, y: 280 }, { x: 950, y: 600 }, { x: 350, y: 620 }],
+        ];
+
+        function pointInPolygon(x, y, poly) {
+          if (!poly || poly.length < 3) return false;
+          var inside = false;
+          for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+            var xi = poly[i].x;
+            var yi = poly[i].y;
+            var xj = poly[j].x;
+            var yj = poly[j].y;
+            var denom = yj - yi;
+            if (denom === 0) denom = 1e-12;
+            var intersect =
+              yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / denom + xi;
+            if (intersect) inside = !inside;
+          }
+          return inside;
+        }
+
+        function pointInBuildableArea(x, y) {
+          if (!BUILDABLE_POLYGONS.length) return true;
+          for (var p = 0; p < BUILDABLE_POLYGONS.length; p++) {
+            if (pointInPolygon(x, y, BUILDABLE_POLYGONS[p])) return true;
+          }
+          return false;
+        }
+
+        function randomPointInBuildableArea(margin, maxX, maxY) {
+          var x;
+          var y;
+          var tries = 0;
+          var cap = 120;
+          do {
+            x = margin + Math.random() * (maxX - margin);
+            y = margin + Math.random() * (maxY - margin);
+            tries++;
+          } while (!pointInBuildableArea(x, y) && tries < cap);
+          return { x: x, y: y };
+        }
+
         function addBuildMarkerDot(payload) {
           if (!markersG) return;
           var margin = 48;
@@ -221,8 +271,9 @@
             }
           } catch (e) {}
           if (x == null) {
-            x = margin + Math.random() * (maxX - margin);
-            y = margin + Math.random() * (maxY - margin);
+            var pt = randomPointInBuildableArea(margin, maxX, maxY);
+            x = pt.x;
+            y = pt.y;
           }
           var c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
           c.setAttribute("cx", String(x));
