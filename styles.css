@@ -535,3 +535,55 @@ body.page-desktop .dashboard__bottom-panel {
   width: auto;
   max-width: none;
 }
+
+/* MQTT status pill (same pattern as MQtest.html) — desktop map card */
+.mqtt-status-pill {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  pointer-events: none;
+  font-family: "Oxanium", system-ui, sans-serif;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.mqtt-status-pill__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.95;
+  flex-shrink: 0;
+}
+
+.mqtt-status-pill--disconnected {
+  background: rgba(30, 30, 35, 0.92);
+  color: #9ca3af;
+}
+
+.mqtt-status-pill--connecting {
+  background: rgba(58, 53, 32, 0.92);
+  color: #e6c07b;
+}
+
+.mqtt-status-pill--connected {
+  background: rgba(30, 51, 40, 0.92);
+  color: #7fd962;
+}
+
+.mqtt-status-pill--error {
+  background: rgba(58, 34, 36, 0.92);
+  color: #f07178;
+}
+
+.mqtt-status-pill--unavailable {
+  background: rgba(45, 45, 50, 0.92);
+  color: #b8bcc4;
+}

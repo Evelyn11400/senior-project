@@ -581,10 +581,71 @@
       background: white;
       border-radius: 12px;
     }
+
+    /* MQTT status pill (aligned with MQtest / desktop) */
+    .mqtt-status-pill {
+      position: absolute;
+      top: 12px;
+      right: 16px;
+      z-index: 50;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      pointer-events: none;
+      font-family: 'Oxanium', sans-serif;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+    }
+
+    .mqtt-status-pill__dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: 0.95;
+      flex-shrink: 0;
+    }
+
+    .mqtt-status-pill--disconnected {
+      background: rgba(42, 47, 69, 0.95);
+      color: #b8bcc8;
+    }
+
+    .mqtt-status-pill--connecting {
+      background: rgba(74, 65, 40, 0.95);
+      color: #e6c07b;
+    }
+
+    .mqtt-status-pill--connected {
+      background: rgba(36, 62, 48, 0.95);
+      color: #7fd962;
+    }
+
+    .mqtt-status-pill--error {
+      background: rgba(70, 40, 44, 0.95);
+      color: #f07178;
+    }
+
+    .mqtt-status-pill--unavailable {
+      background: rgba(42, 47, 69, 0.95);
+      color: #9aa3b8;
+    }
   </style>
 </head>
 <body>
   <div class="app">
+    <div
+      class="mqtt-status-pill mqtt-status-pill--connecting"
+      id="mqtt-status-pill"
+      role="status"
+      aria-live="polite"
+    >
+      <span class="mqtt-status-pill__dot" aria-hidden="true"></span>
+      <span class="mqtt-status-pill__label" id="mqtt-status-pill-label">Connecting…</span>
+    </div>
     <!-- View 1: Splash -->
     <section id="view-splash" class="view active" data-view="splash">
       <div class="logo-block">
@@ -709,6 +770,27 @@
 
   <script>
     (function () {
+      var mqttPill = document.getElementById("mqtt-status-pill");
+      var mqttPillLabel = document.getElementById("mqtt-status-pill-label");
+      function setMqttPill(state, message) {
+        if (!mqttPill || !mqttPillLabel) return;
+        var labels = {
+          connecting: "Connecting…",
+          connected: "Connected",
+          disconnected: "Disconnected",
+          error: "Error",
+          unavailable: "MQTT unavailable",
+        };
+        mqttPill.className = "mqtt-status-pill mqtt-status-pill--" + state;
+        mqttPillLabel.textContent = labels[state] || state;
+        mqttPill.title =
+          message && (state === "error" || state === "unavailable") ? message : "";
+      }
+      window.addEventListener("blackout-mqtt-status", function (ev) {
+        var d = ev.detail || {};
+        setMqttPill(d.state || "disconnected", d.message);
+      });
+
       const views = document.querySelectorAll('.view');
       const form = document.getElementById('form-name');
       const inputName = document.getElementById('input-name');

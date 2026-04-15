@@ -16,6 +16,15 @@
     <div class="dashboard">
       <div class="desktop" data-node-id="10:2" aria-label="Blackout Reboot desktop">
         <section class="dashboard__top" aria-label="Blackout Reboot map">
+          <div
+            class="mqtt-status-pill mqtt-status-pill--connecting"
+            id="mqtt-status-pill"
+            role="status"
+            aria-live="polite"
+          >
+            <span class="mqtt-status-pill__dot" aria-hidden="true"></span>
+            <span class="mqtt-status-pill__label" id="mqtt-status-pill-label">Connecting…</span>
+          </div>
           <div class="dashboard__map">
             <!-- Raster is embedded inside map-embedded.svg (pattern + base64 PNG); avoids broken remote asset / layering issues -->
             <img
@@ -109,6 +118,27 @@
     <script src="/hivemq-client.js"></script>
     <script>
       (function () {
+        var mqttPill = document.getElementById("mqtt-status-pill");
+        var mqttPillLabel = document.getElementById("mqtt-status-pill-label");
+        function setMqttPill(state, message) {
+          if (!mqttPill || !mqttPillLabel) return;
+          var labels = {
+            connecting: "Connecting…",
+            connected: "Connected",
+            disconnected: "Disconnected",
+            error: "Error",
+            unavailable: "MQTT unavailable",
+          };
+          mqttPill.className = "mqtt-status-pill mqtt-status-pill--" + state;
+          mqttPillLabel.textContent = labels[state] || state;
+          mqttPill.title =
+            message && (state === "error" || state === "unavailable") ? message : "";
+        }
+        window.addEventListener("blackout-mqtt-status", function (ev) {
+          var d = ev.detail || {};
+          setMqttPill(d.state || "disconnected", d.message);
+        });
+
         var el = document.getElementById("desktop-names-list");
         if (!el) return;
 
@@ -149,6 +179,7 @@
         }
 
         if (typeof mqtt === "undefined") {
+          setMqttPill("unavailable", "mqtt.js not loaded");
           el.textContent =
             "无法加载 MQTT 库。请用 http(s) 打开本页，并检查网络能否访问 CDN。";
           return;
@@ -156,8 +187,9 @@
 
         var B = window.BlackoutMQTT;
         if (!B || !B.client) {
+          setMqttPill("unavailable", "MQTT client not created");
           el.textContent =
-            "请在 mqtt-config.js 中填写 HiveMQ 用户名和密码（与手机相同）。跨设备只走 MQTT，无本机接口。";
+            "MQTT 未初始化（请用 https 打开并检查网络）。桌面与手机共用 HiveMQ WebSocket。";
           return;
         }
 
