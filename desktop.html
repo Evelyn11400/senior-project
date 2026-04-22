@@ -13,33 +13,6 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body class="page-desktop">
-    <div
-      id="desktop-name-gate"
-      class="desktop-name-gate"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="desktop-name-gate-title"
-      hidden
-    >
-      <div class="desktop-name-gate__panel">
-        <h2 id="desktop-name-gate-title" class="desktop-name-gate__title">Enter your name</h2>
-        <p class="desktop-name-gate__hint">
-          This name appears on the map when you publish from mobile. Use the same name on both devices if you test locally.
-        </p>
-        <label class="desktop-name-gate__label" for="desktop-name-input">Display name</label>
-        <input
-          id="desktop-name-input"
-          class="desktop-name-gate__input"
-          type="text"
-          maxlength="48"
-          autocomplete="name"
-          placeholder="Your name"
-        />
-        <button type="button" class="desktop-name-gate__btn" id="desktop-name-gate-submit">
-          Continue
-        </button>
-      </div>
-    </div>
     <div class="dashboard">
       <div class="desktop" data-node-id="10:2" aria-label="Blackout Reboot desktop">
         <section class="dashboard__top" aria-label="Blackout Reboot map">
@@ -165,15 +138,12 @@
     <script src="/hivemq-client.js"></script>
     <script>
       (function () {
-        var gate = document.getElementById("desktop-name-gate");
-        var inp = document.getElementById("desktop-name-input");
-        var btnGate = document.getElementById("desktop-name-gate-submit");
         var chip = document.getElementById("desktop-user-chip");
         var chipName = document.getElementById("desktop-user-chip-name");
         var chipAv = document.getElementById("desktop-user-chip-avatar");
-        if (!gate || !inp || !btnGate || !chip || !chipName || !chipAv) return;
+        if (!chip || !chipName || !chipAv) return;
 
-        function getDesktopStoredName() {
+        function getStoredName() {
           try {
             return (localStorage.getItem("blackout-reboot-name") || "").trim();
           } catch (e) {
@@ -181,7 +151,7 @@
           }
         }
 
-        function desktopInitialFromName(n) {
+        function initialFromName(n) {
           var s = (n || "").trim();
           if (!s) return "?";
           var c = s.codePointAt(0);
@@ -189,53 +159,20 @@
         }
 
         function syncDesktopUserChip() {
-          var n = getDesktopStoredName();
+          var n = getStoredName();
           if (!n) {
             chip.hidden = true;
             return;
           }
           chip.hidden = false;
           chipName.textContent = n;
-          chipAv.textContent = desktopInitialFromName(n);
+          chipAv.textContent = initialFromName(n);
         }
 
-        function tryPublishDesktopName(n) {
-          var B = window.BlackoutMQTT;
-          if (B && typeof B.publishSubmittedName === "function") {
-            try {
-              B.publishSubmittedName(n);
-            } catch (e) {}
-          }
-        }
-
-        function submitDesktopNameGate() {
-          var v = (inp.value || "").trim();
-          if (!v) {
-            inp.focus();
-            return;
-          }
-          try {
-            localStorage.setItem("blackout-reboot-name", v);
-          } catch (e) {}
-          tryPublishDesktopName(v);
-          gate.hidden = true;
-          syncDesktopUserChip();
-        }
-
-        btnGate.addEventListener("click", submitDesktopNameGate);
-        inp.addEventListener("keydown", function (ev) {
-          if (ev.key === "Enter") {
-            ev.preventDefault();
-            submitDesktopNameGate();
-          }
+        window.addEventListener("storage", function (ev) {
+          if (ev.key === "blackout-reboot-name") syncDesktopUserChip();
         });
-
-        if (!getDesktopStoredName()) {
-          gate.hidden = false;
-          inp.focus();
-        } else {
-          syncDesktopUserChip();
-        }
+        syncDesktopUserChip();
       })();
     </script>
     <script>

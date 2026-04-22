@@ -569,90 +569,9 @@ body.page-desktop .dashboard__bottom-panel {
   max-width: none;
 }
 
-/* First visit: name gate + operator chip (desktop map card) */
-.desktop-name-gate[hidden],
+/* Operator chip when name exists in localStorage (e.g. from mobile, same origin) */
 .desktop-user-chip[hidden] {
   display: none !important;
-}
-
-.desktop-name-gate {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: rgba(0, 0, 0, 0.82);
-  backdrop-filter: blur(6px);
-}
-
-.desktop-name-gate__panel {
-  width: min(380px, 100%);
-  padding: 28px 26px;
-  border-radius: 14px;
-  background: linear-gradient(165deg, #3d445c 0%, #2a3045 100%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.55);
-}
-
-.desktop-name-gate__title {
-  margin: 0 0 10px;
-  font-family: var(--font-display);
-  font-size: 1.25rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-}
-
-.desktop-name-gate__hint {
-  margin: 0 0 18px;
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.75);
-  line-height: 1.45;
-}
-
-.desktop-name-gate__label {
-  display: block;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(255, 255, 255, 0.55);
-  margin-bottom: 6px;
-}
-
-.desktop-name-gate__input {
-  width: 100%;
-  padding: 12px 14px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(0, 0, 0, 0.35);
-  color: #fff;
-  font-family: var(--font-ui);
-  font-size: 15px;
-  outline: none;
-  box-sizing: border-box;
-}
-
-.desktop-name-gate__input:focus {
-  border-color: rgba(246, 158, 123, 0.55);
-}
-
-.desktop-name-gate__btn {
-  margin-top: 18px;
-  width: 100%;
-  padding: 12px 18px;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  font-family: var(--font-ui);
-  font-weight: 600;
-  font-size: 15px;
-  color: #1a1a1a;
-  background: #f69e7b;
-}
-
-.desktop-name-gate__btn:hover {
-  filter: brightness(1.06);
 }
 
 .desktop-user-chip {
