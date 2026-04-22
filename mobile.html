@@ -587,6 +587,36 @@
       line-height: 1.4;
     }
 
+    .build-confirm-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .build-confirm-actions .btn-confirm {
+      min-width: 128px;
+    }
+
+    .build-confirm-cancel {
+      display: inline-block;
+      min-width: 128px;
+      padding: 14px 24px;
+      font-family: 'Oxanium', sans-serif;
+      font-size: 16px;
+      font-weight: 400;
+      color: #2a2f42;
+      background: transparent;
+      border: 2px solid #383e56;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+
+    .build-confirm-cancel:hover {
+      filter: brightness(0.95);
+    }
+
     /* ----- View 5: Content (placeholder) ----- */
     .content-placeholder {
       margin-top: 20px;
@@ -794,6 +824,25 @@
           No builds remaining. Each user can place up to 2 stations on the map.
         </p>
         <button type="button" class="btn-confirm" id="build-token-modal-ok">OK</button>
+      </div>
+    </div>
+
+    <div
+      class="name-modal-backdrop hidden"
+      id="build-confirm-modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="build-confirm-modal-title"
+      aria-hidden="true"
+    >
+      <div class="name-modal">
+        <p class="name-confirm-copy" id="build-confirm-modal-title">
+          Your station will be placed at a random location on the shared map. Do you want to continue?
+        </p>
+        <div class="build-confirm-actions">
+          <button type="button" class="btn-confirm" id="build-confirm-modal-yes">Confirm</button>
+          <button type="button" class="build-confirm-cancel" id="build-confirm-modal-no">Cancel</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1006,6 +1055,9 @@
       var hintEl = document.getElementById("build-tokens-hint");
       var tokenBackdrop = document.getElementById("build-token-modal-backdrop");
       var tokenOk = document.getElementById("build-token-modal-ok");
+      var confirmBackdrop = document.getElementById("build-confirm-modal-backdrop");
+      var confirmYes = document.getElementById("build-confirm-modal-yes");
+      var confirmNo = document.getElementById("build-confirm-modal-no");
       var publishing = false;
 
       function getBuildCount() {
@@ -1038,32 +1090,22 @@
         tokenBackdrop.setAttribute("aria-hidden", "true");
       }
 
-      function updateBuildTokensHint() {
-        if (!hintEl) return;
-        var used = getBuildCount();
-        var left = Math.max(0, MAX_BUILDS - used);
-        hintEl.textContent = "Builds remaining: " + left + " / " + MAX_BUILDS;
+      function openBuildConfirmModal() {
+        if (!confirmBackdrop) return;
+        confirmBackdrop.classList.remove("hidden");
+        confirmBackdrop.setAttribute("aria-hidden", "false");
       }
 
-      if (tokenOk && tokenBackdrop) {
-        tokenOk.addEventListener("click", closeTokenModal);
+      function closeBuildConfirmModal() {
+        if (!confirmBackdrop) return;
+        confirmBackdrop.classList.add("hidden");
+        confirmBackdrop.setAttribute("aria-hidden", "true");
       }
 
-      window.addEventListener("blackout-dashboard-visible", updateBuildTokensHint);
-      updateBuildTokensHint();
-
-      if (!btn) return;
-      btn.addEventListener("click", function () {
-        if (publishing) return;
+      function runBuildPublish() {
         var B = window.BlackoutMQTT;
         var t = window.BLACKOUT_BUILD_TOPIC || "blackout/reboot/build";
         if (!B || typeof B.publish !== "function" || !B.client) return;
-
-        if (getBuildCount() >= MAX_BUILDS) {
-          openTokenModal();
-          return;
-        }
-
         publishing = true;
         var nm = "";
         try {
@@ -1083,6 +1125,44 @@
           setBuildCount(getBuildCount() + 1);
           updateBuildTokensHint();
         });
+      }
+
+      function updateBuildTokensHint() {
+        if (!hintEl) return;
+        var used = getBuildCount();
+        var left = Math.max(0, MAX_BUILDS - used);
+        hintEl.textContent = "Builds remaining: " + left + " / " + MAX_BUILDS;
+      }
+
+      if (tokenOk && tokenBackdrop) {
+        tokenOk.addEventListener("click", closeTokenModal);
+      }
+
+      if (confirmYes && confirmBackdrop) {
+        confirmYes.addEventListener("click", function () {
+          closeBuildConfirmModal();
+          runBuildPublish();
+        });
+      }
+      if (confirmNo && confirmBackdrop) {
+        confirmNo.addEventListener("click", closeBuildConfirmModal);
+      }
+
+      window.addEventListener("blackout-dashboard-visible", updateBuildTokensHint);
+      updateBuildTokensHint();
+
+      if (!btn) return;
+      btn.addEventListener("click", function () {
+        if (publishing) return;
+        var B = window.BlackoutMQTT;
+        if (!B || typeof B.publish !== "function" || !B.client) return;
+
+        if (getBuildCount() >= MAX_BUILDS) {
+          openTokenModal();
+          return;
+        }
+
+        openBuildConfirmModal();
       });
     })();
   </script>
