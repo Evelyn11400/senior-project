@@ -319,7 +319,7 @@
             B.publish(
               stationsTopic,
               JSON.stringify({ v: 1, stations: list }),
-              { qos: 0 }
+              { qos: 1, retain: true }
             );
           } catch (ePub) {}
         }
@@ -353,7 +353,7 @@
         }
 
         setInterval(updateAllMarkerHealthText, 1000);
-        setInterval(publishStationsSnapshot, 25000);
+        setInterval(publishStationsSnapshot, 8000);
 
         el.textContent = "Connecting HiveMQ…";
 

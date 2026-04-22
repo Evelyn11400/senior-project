@@ -1325,6 +1325,26 @@
         return Math.min(100, cur + 5);
       }
 
+      function mergeStationFromBuildPayload(payload) {
+        var raw = payloadToUtf8Stations(payload);
+        var o = null;
+        try {
+          o = JSON.parse(raw);
+        } catch (e0) {}
+        if (!o || typeof o !== "object") return;
+        var stationId = stationIdTrimmed(o);
+        if (!stationId) return;
+        for (var i = 0; i < stationsCache.length; i++) {
+          if (stationIdTrimmed(stationsCache[i]) === stationId) return;
+        }
+        var payloadT =
+          typeof o.t === "number" && isFinite(o.t) ? o.t : Date.now();
+        var builtAt = Math.max(Date.now(), payloadT);
+        var nm = "";
+        if (typeof o.name === "string" && o.name.trim()) nm = o.name.trim();
+        stationsCache.push({ id: stationId, name: nm, builtAt: builtAt });
+      }
+
       function pickLowestMaintenanceStation() {
         if (!stationsCache.length) return null;
         var bestH = Infinity;
@@ -1421,30 +1441,42 @@
 
       function attachStationsFeed() {
         var B = window.BlackoutMQTT;
-        if (!B || !B.client || B.__blackoutStationsInbound) return;
-        B.__blackoutStationsInbound = true;
+        if (!B || !B.client || B.__blackoutStationFeedsAttached) return;
+        B.__blackoutStationFeedsAttached = true;
         var st = window.BLACKOUT_STATIONS_TOPIC || "blackout/reboot/stations";
+        var bt = window.BLACKOUT_BUILD_TOPIC || "blackout/reboot/build";
         B.client.on("message", function (topic, payload) {
-          if (topic !== st) return;
-          try {
-            var o = JSON.parse(payloadToUtf8Stations(payload));
-            if (o && Array.isArray(o.stations)) {
-              var next = [];
-              for (var si = 0; si < o.stations.length; si++) {
-                var entry = o.stations[si];
-                if (!entry || typeof entry !== "object") continue;
-                var bid = stationIdTrimmed(entry);
-                var ba = entry.builtAt;
-                if (typeof ba === "string") ba = parseFloat(ba, 10);
-                if (!bid || typeof ba !== "number" || !isFinite(ba)) continue;
-                next.push({ id: bid, name: entry.name, builtAt: ba });
+          if (topic === st) {
+            try {
+              var o = JSON.parse(payloadToUtf8Stations(payload));
+              if (o && Array.isArray(o.stations)) {
+                var next = [];
+                for (var si = 0; si < o.stations.length; si++) {
+                  var entry = o.stations[si];
+                  if (!entry || typeof entry !== "object") continue;
+                  var bid = stationIdTrimmed(entry);
+                  var ba = entry.builtAt;
+                  if (typeof ba === "string") ba = parseFloat(ba, 10);
+                  if (!bid || typeof ba !== "number" || !isFinite(ba)) continue;
+                  next.push({ id: bid, name: entry.name, builtAt: ba });
+                }
+                stationsCache = next;
               }
-              stationsCache = next;
-            }
-          } catch (eSt) {}
+            } catch (eSt) {}
+            return;
+          }
+          if (topic === bt) {
+            try {
+              mergeStationFromBuildPayload(payload);
+            } catch (eB) {}
+            return;
+          }
         });
         B.subscribe(st, function (err) {
           if (err) console.warn("[mobile] subscribe stations:", err);
+        });
+        B.subscribe(bt, function (err) {
+          if (err) console.warn("[mobile] subscribe build:", err);
         });
       }
 
@@ -1492,7 +1524,7 @@
             return;
           }
           var title = formatStationTitle(pick.station.name);
-          pendingRepairStationId = pick.station.id.trim();
+          pendingRepairStationId = stationIdTrimmed(pick.station);
           openRepairConfirmModal(
             "This will repair " + title + " (+5% maintenance). Continue?"
           );
