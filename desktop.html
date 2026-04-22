@@ -295,6 +295,14 @@
           return Math.max(0, Math.min(100, m));
         }
 
+        /** Integer percent for map label: compare bounds, truncate (no Math.round). */
+        function maintenancePctLabel(p) {
+          if (!(typeof p === "number") || !isFinite(p)) return "0%";
+          if (p >= 100) return "100%";
+          if (p <= 0) return "0%";
+          return String(p | 0) + "%";
+        }
+
         function publishStationsSnapshot() {
           if (!B || typeof B.publish !== "function") return;
           var list = stationEntries.map(function (s) {
@@ -313,8 +321,8 @@
           for (var i = 0; i < stationEntries.length; i++) {
             var s = stationEntries[i];
             if (!s.pctEl) continue;
-            var pct = Math.round(maintenancePercentFromBuiltAt(s.builtAt));
-            s.pctEl.textContent = String(pct) + "%";
+            var pct = maintenancePercentFromBuiltAt(s.builtAt);
+            s.pctEl.textContent = maintenancePctLabel(pct);
           }
         }
 
@@ -339,7 +347,7 @@
         setInterval(updateAllMarkerHealthText, 1000);
         setInterval(publishStationsSnapshot, 25000);
 
-        el.textContent = "正在连接 HiveMQ…";
+        el.textContent = "Connecting HiveMQ…";
 
         /** Optional polygon fallback if `#map-build-region` has no usable `d`. */
         var BUILDABLE_POLYGONS = [];
@@ -481,7 +489,7 @@
           pctEl.setAttribute("text-anchor", "middle");
           pctEl.appendChild(
             document.createTextNode(
-              String(Math.round(maintenancePercentFromBuiltAt(builtAt))) + "%"
+              maintenancePctLabel(maintenancePercentFromBuiltAt(builtAt))
             )
           );
 

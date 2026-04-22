@@ -1106,6 +1106,11 @@
 
       var stationsCache = [];
       var DECAY_MS = 40 * 60 * 1000;
+      /**
+       * Skip stations at or above this maintenance (%) when picking repair targets.
+       * 99 = only stations with h strictly under 99% are offered for repair (满血/高血不参与).
+       */
+      var REPAIR_SKIP_AT_OR_ABOVE_PCT = 99;
       var pendingRepairStationId = "";
 
       var btnRepair = document.getElementById("btn-repair-station");
@@ -1311,6 +1316,14 @@
         return n + "'s station";
       }
 
+      function stationIdTrimmed(s) {
+        if (!s) return "";
+        var raw = s.id != null ? s.id : s.stationId;
+        if (raw == null) return "";
+        var sid = typeof raw === "string" ? raw.trim() : String(raw).trim();
+        return sid;
+      }
+
       function pickLowestMaintenanceStation() {
         if (!stationsCache.length) return null;
         var bestH = Infinity;
@@ -1320,9 +1333,10 @@
           if (!s) continue;
           var ba = stationBuiltAtMs(s);
           if (!isFinite(ba)) continue;
-          if (typeof s.id !== "string" || !s.id.trim()) continue;
+          var sid = stationIdTrimmed(s);
+          if (!sid) continue;
           var h = maintenanceFromBuiltAt(ba);
-          if (h >= 100 - 1e-6) continue;
+          if (h >= REPAIR_SKIP_AT_OR_ABOVE_PCT - 1e-6) continue;
           if (h < bestH - 1e-9) {
             bestH = h;
             ties = [s];
@@ -1340,7 +1354,7 @@
         if (!sid) return;
         for (var i = 0; i < stationsCache.length; i++) {
           var row = stationsCache[i];
-          if (!row || (row.id || "").trim() !== sid) continue;
+          if (!row || stationIdTrimmed(row) !== sid) continue;
           var ba = stationBuiltAtMs(row);
           if (!isFinite(ba)) return;
           var cur = maintenanceFromBuiltAt(ba);
@@ -1418,8 +1432,7 @@
               for (var si = 0; si < o.stations.length; si++) {
                 var entry = o.stations[si];
                 if (!entry || typeof entry !== "object") continue;
-                var bid =
-                  typeof entry.id === "string" ? entry.id.trim() : "";
+                var bid = stationIdTrimmed(entry);
                 var ba = entry.builtAt;
                 if (typeof ba === "string") ba = parseFloat(ba, 10);
                 if (!bid || typeof ba !== "number" || !isFinite(ba)) continue;
