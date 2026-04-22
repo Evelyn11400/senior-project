@@ -1049,7 +1049,8 @@
   <script>
     (function () {
       var MAX_BUILDS = 2;
-      var LS_BUILD_COUNT = "blackout-reboot-station-build-count";
+      var LS_BUILDS_MAP = "blackout-reboot-station-build-counts-by-user";
+      var LS_BUILD_COUNT_LEGACY = "blackout-reboot-station-build-count";
 
       var btn = document.getElementById("btn-build-station");
       var hintEl = document.getElementById("build-tokens-hint");
@@ -1060,22 +1061,72 @@
       var confirmNo = document.getElementById("build-confirm-modal-no");
       var publishing = false;
 
-      function getBuildCount() {
+      function getStoredNameForQuota() {
         try {
-          var n = parseInt(localStorage.getItem(LS_BUILD_COUNT) || "0", 10);
-          if (isNaN(n) || n < 0) return 0;
-          if (n > MAX_BUILDS) return MAX_BUILDS;
-          return n;
+          return (localStorage.getItem("blackout-reboot-name") || "").trim();
         } catch (e) {
-          return 0;
+          return "";
         }
       }
 
-      function setBuildCount(n) {
+      function userBuildQuotaKey() {
+        var name = getStoredNameForQuota();
+        return name ? name.toLowerCase() : "__anon__";
+      }
+
+      function readBuildCountsMap() {
         try {
-          var v = Math.min(MAX_BUILDS, Math.max(0, Math.floor(n)));
-          localStorage.setItem(LS_BUILD_COUNT, String(v));
+          var raw = localStorage.getItem(LS_BUILDS_MAP);
+          if (!raw) return {};
+          var o = JSON.parse(raw);
+          return o && typeof o === "object" ? o : {};
+        } catch (e) {
+          return {};
+        }
+      }
+
+      function writeBuildCountsMap(map) {
+        try {
+          localStorage.setItem(LS_BUILDS_MAP, JSON.stringify(map));
         } catch (e) {}
+      }
+
+      function migrateLegacyBuildCountOnce() {
+        try {
+          var legacy = localStorage.getItem(LS_BUILD_COUNT_LEGACY);
+          if (legacy == null) return;
+          var map = readBuildCountsMap();
+          if (Object.keys(map).length > 0) {
+            localStorage.removeItem(LS_BUILD_COUNT_LEGACY);
+            return;
+          }
+          var n = parseInt(legacy, 10);
+          if (isNaN(n) || n < 0) {
+            localStorage.removeItem(LS_BUILD_COUNT_LEGACY);
+            return;
+          }
+          map[userBuildQuotaKey()] = Math.min(MAX_BUILDS, Math.max(0, n));
+          writeBuildCountsMap(map);
+          localStorage.removeItem(LS_BUILD_COUNT_LEGACY);
+        } catch (e) {}
+      }
+
+      function getBuildCount() {
+        migrateLegacyBuildCountOnce();
+        var map = readBuildCountsMap();
+        var k = userBuildQuotaKey();
+        var c = map[k];
+        if (typeof c !== "number" || isNaN(c)) return 0;
+        return Math.min(MAX_BUILDS, Math.max(0, Math.floor(c)));
+      }
+
+      function setBuildCount(n) {
+        migrateLegacyBuildCountOnce();
+        var map = readBuildCountsMap();
+        var k = userBuildQuotaKey();
+        var v = Math.min(MAX_BUILDS, Math.max(0, Math.floor(n)));
+        map[k] = v;
+        writeBuildCountsMap(map);
       }
 
       function openTokenModal() {
@@ -1131,7 +1182,8 @@
         if (!hintEl) return;
         var used = getBuildCount();
         var left = Math.max(0, MAX_BUILDS - used);
-        hintEl.textContent = "Builds remaining: " + left + " / " + MAX_BUILDS;
+        hintEl.textContent =
+          "Builds remaining for this name: " + left + " / " + MAX_BUILDS;
       }
 
       if (tokenOk && tokenBackdrop) {
@@ -1149,6 +1201,9 @@
       }
 
       window.addEventListener("blackout-dashboard-visible", updateBuildTokensHint);
+      window.addEventListener("storage", function (ev) {
+        if (ev.key === "blackout-reboot-name") updateBuildTokensHint();
+      });
       updateBuildTokensHint();
 
       if (!btn) return;
