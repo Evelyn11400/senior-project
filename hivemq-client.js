@@ -68,7 +68,17 @@
     window.BlackoutMQTT = {
       connected: false,
       client: null,
-      publish: function () {},
+      publish: function (topic, message, opts, cb) {
+        if (typeof opts === "function") {
+          cb = opts;
+          opts = {};
+        }
+        if (typeof cb === "function") {
+          setTimeout(function () {
+            cb(new Error("MQTT unavailable"));
+          }, 0);
+        }
+      },
       subscribe: function () {},
       unsubscribe: function () {},
       publishSubmittedName: function () {},
@@ -147,8 +157,17 @@
     get connected() {
       return connected && client.connected;
     },
-    publish: function (topic, message, opts) {
-      return client.publish(topic, message, opts || {});
+    publish: function (topic, message, opts, cb) {
+      var o = opts;
+      if (typeof o === "function") {
+        cb = o;
+        o = {};
+      }
+      o = o || {};
+      if (typeof cb === "function") {
+        return client.publish(topic, message, o, cb);
+      }
+      return client.publish(topic, message, o);
     },
     subscribe: function (topic, opts, cb) {
       if (typeof opts === "function") {

@@ -6,12 +6,12 @@
   <title>Blackout Reboot</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Orbitron:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     html, body {
-      font-family: "Exo 2", system-ui, sans-serif;
+      font-family: 'Oxanium', sans-serif;
       background: #383e56;
       color: white;
       min-height: 100vh;
@@ -65,7 +65,6 @@
     }
 
     .logo-title-blackout {
-      font-family: "Orbitron", "Exo 2", sans-serif;
       font-size: 80px;
       font-weight: 400;
       line-height: 1;
@@ -109,7 +108,6 @@
     }
 
     .logo-title-reboot {
-      font-family: "Orbitron", "Exo 2", sans-serif;
       font-size: 64px;
       font-weight: 400;
       line-height: 1;
@@ -404,7 +402,7 @@
       display: inline-block;
       min-width: 160px;
       padding: 14px 28px;
-      font-family: "Exo 2", sans-serif;
+      font-family: 'Oxanium', sans-serif;
       font-size: 16px;
       font-weight: 400;
       color: #fff;
@@ -431,7 +429,7 @@
       max-width: 320px;
       margin: 0 auto;
       padding: 14px 16px;
-      font-family: "Exo 2", sans-serif;
+      font-family: 'Oxanium', sans-serif;
       font-size: 16px;
       color: #1a1a1a;
       background: white;
@@ -450,7 +448,7 @@
       max-width: 200px;
       margin: 24px auto 0;
       padding: 14px 24px;
-      font-family: "Exo 2", sans-serif;
+      font-family: 'Oxanium', sans-serif;
       font-size: 16px;
       font-weight: 400;
       color: #1a1a1a;
@@ -506,51 +504,16 @@
     }
 
     .dashboard-logo-br {
-      font-family: "Orbitron", "Exo 2", sans-serif;
       font-size: 24px;
-      font-weight: 600;
+      font-weight: 400;
       color: white;
       text-shadow: 0 0 8px white;
       letter-spacing: 0.05em;
     }
 
-    .user-profile {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 6px;
-      min-width: 0;
-    }
-
-    .user-profile__name {
-      font-size: 13px;
-      font-weight: 600;
-      color: rgba(255, 255, 255, 0.95);
-      max-width: min(200px, 52vw);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      letter-spacing: 0.02em;
-    }
-
-    .user-profile__avatar {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: linear-gradient(155deg, #5c6d94 0%, #2c334d 55%, #1e2436 100%);
-      border: 2px solid rgba(255, 255, 255, 0.28);
-      box-shadow:
-        0 0 0 1px rgba(0, 0, 0, 0.35),
-        0 4px 18px rgba(0, 0, 0, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.12);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: "Orbitron", "Exo 2", sans-serif;
-      font-size: 19px;
-      font-weight: 700;
-      color: #fff;
-      text-shadow: 0 0 14px rgba(246, 158, 123, 0.45);
+    .dashboard-welcome {
+      font-size: 14px;
+      color: rgba(255,255,255,0.95);
     }
 
     .stats-grid {
@@ -602,18 +565,13 @@
       flex: 1;
       min-width: 120px;
       padding: 12px 16px;
-      font-family: "Exo 2", sans-serif;
+      font-family: 'Oxanium', sans-serif;
       font-size: 14px;
       color: white;
       background: #2a2f45;
       border: none;
       border-radius: 10px;
       cursor: pointer;
-    }
-
-    .actions-buttons button:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
     }
 
     .build-tokens-hint {
@@ -646,7 +604,7 @@
       font-size: 11px;
       font-weight: 600;
       pointer-events: none;
-      font-family: "Exo 2", sans-serif;
+      font-family: 'Oxanium', sans-serif;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
     }
 
@@ -749,7 +707,7 @@
 
       <form class="name-prompt" id="form-name" data-next="connecting">
         <label for="input-name">Enter your name here</label>
-        <input type="text" id="input-name" name="name" placeholder="Your name" autocomplete="name" maxlength="48" />
+        <input type="text" id="input-name" name="name" placeholder="Your name" autocomplete="name" />
         <button type="submit" class="btn-ok">OK</button>
       </form>
     </section>
@@ -779,10 +737,7 @@
     <section id="view-dashboard" class="view" data-view="dashboard">
       <header class="dashboard-header">
         <span class="dashboard-logo-br">BR</span>
-        <div class="user-profile" aria-label="Your profile">
-          <span class="user-profile__name" data-user-name></span>
-          <div class="user-profile__avatar" data-user-initial aria-hidden="true">?</div>
-        </div>
+        <span class="dashboard-welcome" id="welcome-text">Welcome!</span>
       </header>
       <div class="stats-grid">
         <div class="stat-card">
@@ -816,15 +771,11 @@
     <section id="view-content" class="view" data-view="content">
       <header class="dashboard-header">
         <span class="dashboard-logo-br">BR</span>
-        <div class="user-profile" aria-label="Your profile">
-          <span class="user-profile__name" data-user-name></span>
-          <div class="user-profile__avatar" data-user-initial aria-hidden="true">?</div>
-        </div>
+        <span class="dashboard-welcome" id="welcome-text-content">Welcome!</span>
       </header>
       <div class="content-placeholder"></div>
     </section>
 
-    <!-- Build station: token不足 (same modal shell as name flow) -->
     <div
       class="name-modal-backdrop hidden"
       id="build-token-modal-backdrop"
@@ -835,26 +786,9 @@
     >
       <div class="name-modal">
         <p class="name-confirm-copy" id="build-token-modal-title">
-          Token 不足：每位用户最多只能建造 2 座基地，你的次数已用完。
+          No builds remaining. Each user can place up to 2 stations on the map.
         </p>
-        <button type="button" class="btn-confirm" id="build-token-modal-ok">确定</button>
-      </div>
-    </div>
-
-    <!-- Build station: 建造成功后的确认式提示 -->
-    <div
-      class="name-modal-backdrop hidden"
-      id="build-success-modal-backdrop"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="build-success-modal-text"
-      aria-hidden="true"
-    >
-      <div class="name-modal">
-        <p class="name-confirm-copy" id="build-success-modal-text">
-          基地已成功提交至共享地图，桌面端将显示你的标记。
-        </p>
-        <button type="button" class="btn-confirm" id="build-success-modal-ok">确定</button>
+        <button type="button" class="btn-confirm" id="build-token-modal-ok">OK</button>
       </div>
     </div>
   </div>
@@ -885,6 +819,7 @@
       const views = document.querySelectorAll('.view');
       const form = document.getElementById('form-name');
       const inputName = document.getElementById('input-name');
+      const welcomeEls = document.querySelectorAll('[id^="welcome-text"]');
       const progressFill = document.getElementById('progress-fill');
       const nameModalBackdrop = document.getElementById('name-modal-backdrop');
       const btnNameModalConfirm = document.getElementById('btn-name-modal-confirm');
@@ -946,12 +881,16 @@
         });
         history.replaceState(null, '', '#' + viewId);
 
+        if (viewId === 'name') {
+          openNameModal();
+        }
+
         if (viewId === 'connecting') {
           startConnectingProgress();
         }
 
         if (viewId === 'dashboard' || viewId === 'content') {
-          updateUserProfileUI();
+          updateWelcome();
         }
         if (viewId === 'dashboard') {
           try {
@@ -968,28 +907,16 @@
         }
       }
 
-      function displayInitialFromName(name) {
-        var s = (name || '').trim();
-        if (!s) return '?';
-        var cp = s.codePointAt(0);
-        if (cp === undefined) return '?';
-        return String.fromCodePoint(cp).toUpperCase();
-      }
-
-      function updateUserProfileUI() {
+      function updateWelcome() {
         var name = getStoredName();
-        var initial = displayInitialFromName(name);
-        document.querySelectorAll('[data-user-name]').forEach(function (el) {
-          el.textContent = name || '';
-        });
-        document.querySelectorAll('[data-user-initial]').forEach(function (el) {
-          el.textContent = initial;
+        welcomeEls.forEach(function (el) {
+          if (!el) return;
+          el.textContent = name ? 'Welcome, ' + name + '!' : 'Welcome!';
         });
       }
 
       document.querySelector('#view-splash .btn-ok').addEventListener('click', function () {
         showView('name');
-        openNameModal();
       });
 
       if (btnNameModalConfirm) {
@@ -1009,15 +936,11 @@
         form.addEventListener('submit', function (e) {
           e.preventDefault();
           var name = (inputName.value || '').trim();
-          if (!name) {
-            if (inputName) inputName.focus();
-            return;
-          }
           try {
             localStorage.setItem('blackout-reboot-name', name);
           } catch (err) {}
           publishNameToHiveMQ(name);
-          updateUserProfileUI();
+          updateWelcome();
           showView('connecting');
         });
       }
@@ -1025,25 +948,17 @@
       window.addEventListener('hashchange', function () {
         var hash = (location.hash || '#splash').slice(1);
         if (['splash', 'name', 'connecting', 'dashboard', 'content'].indexOf(hash) === -1) return;
-        if (
-          !getStoredName() &&
-          (hash === 'splash' ||
-            hash === 'dashboard' ||
-            hash === 'content' ||
-            hash === 'connecting')
-        ) {
-          history.replaceState(null, '', '#name');
-          showView('name');
-          return;
-        }
         views.forEach(function (v) {
           v.classList.toggle('active', v.id === 'view-' + hash);
         });
+        if (hash === 'name') {
+          openNameModal();
+        }
         if (hash === 'connecting') {
           startConnectingProgress();
         }
         if (hash === 'dashboard' || hash === 'content') {
-          updateUserProfileUI();
+          updateWelcome();
         }
         if (hash === 'dashboard') {
           try {
@@ -1052,33 +967,23 @@
         }
       });
 
-      if (!getStoredName()) {
-        var raw = (location.hash || '').slice(1);
-        if (
-          !raw ||
-          raw === 'splash' ||
-          raw === 'dashboard' ||
-          raw === 'content' ||
-          raw === 'connecting'
-        ) {
-          history.replaceState(null, '', '#name');
-        }
-      }
-
       var initialHash = (location.hash || '#splash').slice(1);
       if (['splash', 'name', 'connecting', 'dashboard', 'content'].indexOf(initialHash) !== -1) {
         views.forEach(function (v) {
           v.classList.toggle('active', v.id === 'view-' + initialHash);
         });
       }
+      if (initialHash === 'name') {
+        openNameModal();
+      }
       if (initialHash === 'connecting') {
         startConnectingProgress();
       }
-      updateUserProfileUI();
-      if (initialHash === "dashboard") {
+      updateWelcome();
+      if (initialHash === 'dashboard') {
         setTimeout(function () {
           try {
-            window.dispatchEvent(new CustomEvent("blackout-dashboard-visible"));
+            window.dispatchEvent(new CustomEvent('blackout-dashboard-visible'));
           } catch (e) {}
         }, 0);
       }
@@ -1096,9 +1001,7 @@
       var hintEl = document.getElementById("build-tokens-hint");
       var tokenBackdrop = document.getElementById("build-token-modal-backdrop");
       var tokenOk = document.getElementById("build-token-modal-ok");
-      var successBackdrop = document.getElementById("build-success-modal-backdrop");
-      var successOk = document.getElementById("build-success-modal-ok");
-      var successText = document.getElementById("build-success-modal-text");
+      var publishing = false;
 
       function getBuildCount() {
         try {
@@ -1118,86 +1021,62 @@
         } catch (e) {}
       }
 
-      function openModalBackdrop(el) {
-        if (!el) return;
-        el.classList.remove("hidden");
-        el.setAttribute("aria-hidden", "false");
+      function openTokenModal() {
+        if (!tokenBackdrop) return;
+        tokenBackdrop.classList.remove("hidden");
+        tokenBackdrop.setAttribute("aria-hidden", "false");
       }
 
-      function closeModalBackdrop(el) {
-        if (!el) return;
-        el.classList.add("hidden");
-        el.setAttribute("aria-hidden", "true");
+      function closeTokenModal() {
+        if (!tokenBackdrop) return;
+        tokenBackdrop.classList.add("hidden");
+        tokenBackdrop.setAttribute("aria-hidden", "true");
       }
 
       function updateBuildTokensHint() {
+        if (!hintEl) return;
         var used = getBuildCount();
-        var left = MAX_BUILDS - used;
-        if (hintEl) {
-          if (left <= 0) {
-            hintEl.textContent = "剩余建造次数：0 / " + MAX_BUILDS + "（已达上限）";
-          } else {
-            hintEl.textContent = "剩余建造次数：" + left + " / " + MAX_BUILDS;
-          }
-        }
-      }
-
-      function showBuildSuccessModal() {
-        if (successText) {
-          var left = MAX_BUILDS - getBuildCount();
-          successText.textContent =
-            "基地已成功提交至共享地图，桌面端将显示你的标记。" +
-            (left > 0 ? "（还可建造 " + left + " 座）" : "（建造次数已用尽）");
-        }
-        openModalBackdrop(successBackdrop);
+        var left = Math.max(0, MAX_BUILDS - used);
+        hintEl.textContent = "Builds remaining: " + left + " / " + MAX_BUILDS;
       }
 
       if (tokenOk && tokenBackdrop) {
-        tokenOk.addEventListener("click", function () {
-          closeModalBackdrop(tokenBackdrop);
-        });
-      }
-      if (successOk && successBackdrop) {
-        successOk.addEventListener("click", function () {
-          closeModalBackdrop(successBackdrop);
-        });
+        tokenOk.addEventListener("click", closeTokenModal);
       }
 
       window.addEventListener("blackout-dashboard-visible", updateBuildTokensHint);
       updateBuildTokensHint();
 
       if (!btn) return;
-
       btn.addEventListener("click", function () {
+        if (publishing) return;
         var B = window.BlackoutMQTT;
         var t = window.BLACKOUT_BUILD_TOPIC || "blackout/reboot/build";
         if (!B || typeof B.publish !== "function" || !B.client) return;
 
         if (getBuildCount() >= MAX_BUILDS) {
-          openModalBackdrop(tokenBackdrop);
+          openTokenModal();
           return;
         }
 
+        publishing = true;
         var nm = "";
         try {
           nm = (localStorage.getItem("blackout-reboot-name") || "").trim();
         } catch (e) {}
-
-        btn.disabled = true;
         var payload = JSON.stringify({
           action: "build",
           t: Date.now(),
           name: nm || undefined,
         });
         B.publish(t, payload, { qos: 1 }, function (err) {
-          btn.disabled = false;
+          publishing = false;
           if (err) {
             console.warn("[mobile] build publish:", err);
             return;
           }
           setBuildCount(getBuildCount() + 1);
           updateBuildTokensHint();
-          showBuildSuccessModal();
         });
       });
     })();
