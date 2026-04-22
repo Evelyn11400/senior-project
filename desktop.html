@@ -121,7 +121,7 @@
         <section class="dashboard__bottom" aria-label="Detail panels">
           <div class="dashboard__bottom-inner">
             <div class="dashboard__bottom-panel dashboard__bottom-panel--names" aria-live="polite">
-              <div class="dashboard__names-label">Names from mobile</div>
+              <div class="dashboard__names-label">Contributors</div>
               <pre class="dashboard__names-list" id="desktop-names-list"></pre>
             </div>
             <div class="dashboard__bottom-panel"></div>
@@ -437,8 +437,9 @@
           for (var di = 0; di < stationEntries.length; di++) {
             if (stationEntries[di].id === stationId) return;
           }
-          var builtAt =
+          var payloadT =
             o && typeof o.t === "number" && isFinite(o.t) ? o.t : Date.now();
+          var builtAt = Math.max(Date.now(), payloadT);
 
           var margin = 48;
           var maxX = 1474 - margin;

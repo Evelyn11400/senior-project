@@ -821,7 +821,7 @@
     >
       <div class="name-modal">
         <p class="name-confirm-copy" id="build-token-modal-title">
-          No builds remaining. You get 2 builds each time you submit your name (each login).
+          No builds remaining.
         </p>
         <button type="button" class="btn-confirm" id="build-token-modal-ok">OK</button>
       </div>
@@ -1250,7 +1250,7 @@
         var used = getBuildCount();
         var left = Math.max(0, MAX_BUILDS - used);
         hintEl.textContent =
-          "Builds remaining (this login): " + left + " / " + MAX_BUILDS;
+          "Builds remaining: " + left + " / " + MAX_BUILDS;
       }
 
       if (tokenOk && tokenBackdrop) {
@@ -1297,6 +1297,14 @@
         return Math.max(0, Math.min(100, m));
       }
 
+      function stationBuiltAtMs(s) {
+        if (!s) return NaN;
+        var ba = s.builtAt;
+        if (typeof ba === "string") ba = parseFloat(ba, 10);
+        if (typeof ba === "number" && isFinite(ba)) return ba;
+        return NaN;
+      }
+
       function formatStationTitle(name) {
         var n = (name || "").trim() || "Someone";
         if (n.length > 28) n = n.slice(0, 25) + "…";
@@ -1305,21 +1313,43 @@
 
       function pickLowestMaintenanceStation() {
         if (!stationsCache.length) return null;
-        var best = null;
         var bestH = Infinity;
+        var ties = [];
         for (var i = 0; i < stationsCache.length; i++) {
           var s = stationsCache[i];
-          if (!s || typeof s.builtAt !== "number" || !isFinite(s.builtAt)) continue;
+          if (!s) continue;
+          var ba = stationBuiltAtMs(s);
+          if (!isFinite(ba)) continue;
           if (typeof s.id !== "string" || !s.id.trim()) continue;
-          var h = maintenanceFromBuiltAt(s.builtAt);
-          if (h < bestH) {
+          var h = maintenanceFromBuiltAt(ba);
+          if (h >= 100 - 1e-6) continue;
+          if (h < bestH - 1e-9) {
             bestH = h;
-            best = s;
+            ties = [s];
+          } else if (Math.abs(h - bestH) <= 1e-9) {
+            ties.push(s);
           }
         }
-        if (!best) return null;
-        if (bestH > 99.9) return null;
-        return { station: best, health: bestH };
+        if (!ties.length) return null;
+        var pickIdx = Math.floor(Math.random() * ties.length);
+        return { station: ties[pickIdx], health: bestH };
+      }
+
+      function applyLocalRepairAfterPublish(stationId) {
+        var sid = (stationId || "").trim();
+        if (!sid) return;
+        for (var i = 0; i < stationsCache.length; i++) {
+          var row = stationsCache[i];
+          if (!row || (row.id || "").trim() !== sid) continue;
+          var ba = stationBuiltAtMs(row);
+          if (!isFinite(ba)) return;
+          var cur = maintenanceFromBuiltAt(ba);
+          if (cur >= 100 - 1e-6) return;
+          var newM = Math.min(100, cur + 5);
+          var now = Date.now();
+          row.builtAt = now - ((100 - newM) * DECAY_MS) / 100;
+          return;
+        }
       }
 
       function openRepairNoneModal() {
@@ -1351,17 +1381,26 @@
         var B = window.BlackoutMQTT;
         var rt = window.BLACKOUT_REPAIR_TOPIC || "blackout/reboot/repair";
         if (!B || typeof B.publish !== "function" || !B.client) return;
-        if (!pendingRepairStationId) return;
+        var sid = (pendingRepairStationId || "").trim();
+        if (!sid) return;
         repairPublishing = true;
         var payload = JSON.stringify({
           action: "repair",
-          stationId: pendingRepairStationId,
+          stationId: sid,
           t: Date.now(),
         });
+        var failSafe = setTimeout(function () {
+          repairPublishing = false;
+        }, 10000);
         B.publish(rt, payload, { qos: 1 }, function (err) {
+          clearTimeout(failSafe);
           repairPublishing = false;
           pendingRepairStationId = "";
-          if (err) console.warn("[mobile] repair publish:", err);
+          if (err) {
+            console.warn("[mobile] repair publish:", err);
+            return;
+          }
+          applyLocalRepairAfterPublish(sid);
         });
       }
 
@@ -1374,7 +1413,20 @@
           if (topic !== st) return;
           try {
             var o = JSON.parse(payloadToUtf8Stations(payload));
-            if (o && Array.isArray(o.stations)) stationsCache = o.stations;
+            if (o && Array.isArray(o.stations)) {
+              var next = [];
+              for (var si = 0; si < o.stations.length; si++) {
+                var entry = o.stations[si];
+                if (!entry || typeof entry !== "object") continue;
+                var bid =
+                  typeof entry.id === "string" ? entry.id.trim() : "";
+                var ba = entry.builtAt;
+                if (typeof ba === "string") ba = parseFloat(ba, 10);
+                if (!bid || typeof ba !== "number" || !isFinite(ba)) continue;
+                next.push({ id: bid, name: entry.name, builtAt: ba });
+              }
+              stationsCache = next;
+            }
           } catch (eSt) {}
         });
         B.subscribe(st, function (err) {
