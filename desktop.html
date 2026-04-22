@@ -278,6 +278,8 @@
         var buildRegionPath = document.getElementById("map-build-region");
 
         var MAINTENANCE_DECAY_MS = 40 * 60 * 1000;
+        /** After build/repair, stay at 100% briefly, then linear decay to 0% over MAINTENANCE_DECAY_MS. */
+        var MAINTENANCE_PLATEAU_MS = 250;
 
         function newStationId() {
           if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -291,7 +293,9 @@
         function maintenancePercentFromBuiltAt(builtAt) {
           var elapsed = Date.now() - builtAt;
           if (elapsed <= 0) return 100;
-          var m = 100 * (1 - elapsed / MAINTENANCE_DECAY_MS);
+          if (elapsed <= MAINTENANCE_PLATEAU_MS) return 100;
+          var decayElapsed = elapsed - MAINTENANCE_PLATEAU_MS;
+          var m = 100 * (1 - decayElapsed / MAINTENANCE_DECAY_MS);
           return Math.max(0, Math.min(100, m));
         }
 
@@ -343,7 +347,10 @@
               if (cur >= 100 - 1e-9) return false;
               var newM = maintenancePercentAfterRepair(cur);
               var now = Date.now();
-              st.builtAt = now - ((100 - newM) * MAINTENANCE_DECAY_MS) / 100;
+              st.builtAt =
+                now -
+                (MAINTENANCE_PLATEAU_MS +
+                  ((100 - newM) * MAINTENANCE_DECAY_MS) / 100);
               updateAllMarkerHealthText();
               publishStationsSnapshot();
               return true;
@@ -373,7 +380,10 @@
           var cur0 = maintenancePercentFromBuiltAt(st0.builtAt);
           var newM = maintenancePercentAfterRepair(cur0);
           var now = Date.now();
-          st0.builtAt = now - ((100 - newM) * MAINTENANCE_DECAY_MS) / 100;
+          st0.builtAt =
+            now -
+            (MAINTENANCE_PLATEAU_MS +
+              ((100 - newM) * MAINTENANCE_DECAY_MS) / 100);
           updateAllMarkerHealthText();
           publishStationsSnapshot();
           return true;
