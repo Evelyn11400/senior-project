@@ -1106,11 +1106,6 @@
 
       var stationsCache = [];
       var DECAY_MS = 40 * 60 * 1000;
-      /**
-       * Skip stations at or above this maintenance (%) when picking repair targets.
-       * 99 = only stations with h strictly under 99% are offered for repair (满血/高血不参与).
-       */
-      var REPAIR_SKIP_AT_OR_ABOVE_PCT = 99;
       var pendingRepairStationId = "";
 
       var btnRepair = document.getElementById("btn-repair-station");
@@ -1324,6 +1319,12 @@
         return sid;
       }
 
+      function maintenancePercentAfterRepair(cur) {
+        if (cur >= 100 - 1e-9) return cur;
+        if (cur >= 95 - 1e-9) return 100;
+        return Math.min(100, cur + 5);
+      }
+
       function pickLowestMaintenanceStation() {
         if (!stationsCache.length) return null;
         var bestH = Infinity;
@@ -1336,7 +1337,7 @@
           var sid = stationIdTrimmed(s);
           if (!sid) continue;
           var h = maintenanceFromBuiltAt(ba);
-          if (h >= REPAIR_SKIP_AT_OR_ABOVE_PCT - 1e-6) continue;
+          if (h >= 100 - 1e-6) continue;
           if (h < bestH - 1e-9) {
             bestH = h;
             ties = [s];
@@ -1359,7 +1360,7 @@
           if (!isFinite(ba)) return;
           var cur = maintenanceFromBuiltAt(ba);
           if (cur >= 100 - 1e-6) return;
-          var newM = Math.min(100, cur + 5);
+          var newM = maintenancePercentAfterRepair(cur);
           var now = Date.now();
           row.builtAt = now - ((100 - newM) * DECAY_MS) / 100;
           return;

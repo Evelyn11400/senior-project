@@ -303,6 +303,13 @@
           return String(p | 0) + "%";
         }
 
+        /** +5% per repair; if already >= 95%, one repair sets to 100%. */
+        function maintenancePercentAfterRepair(cur) {
+          if (cur >= 100 - 1e-9) return cur;
+          if (cur >= 95 - 1e-9) return 100;
+          return Math.min(100, cur + 5);
+        }
+
         function publishStationsSnapshot() {
           if (!B || typeof B.publish !== "function") return;
           var list = stationEntries.map(function (s) {
@@ -333,7 +340,8 @@
             if (stationEntries[i].id === sid) {
               var st = stationEntries[i];
               var cur = maintenancePercentFromBuiltAt(st.builtAt);
-              var newM = Math.min(100, cur + 5);
+              if (cur >= 100 - 1e-9) return false;
+              var newM = maintenancePercentAfterRepair(cur);
               var now = Date.now();
               st.builtAt = now - ((100 - newM) * MAINTENANCE_DECAY_MS) / 100;
               updateAllMarkerHealthText();
@@ -528,6 +536,7 @@
           B.subscribe(repairTopic, function (err) {
             if (err) console.error("[desktop] subscribe repair:", err);
           });
+          publishStationsSnapshot();
           render();
         }
 
