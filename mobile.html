@@ -497,9 +497,9 @@
     /* ----- View 4: Dashboard ----- */
     .dashboard-header {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
-      padding: 20px 0 16px;
+      padding: 44px 0 16px;
       border-bottom: 1px solid rgba(255,255,255,0.15);
     }
 
@@ -509,11 +509,16 @@
       color: white;
       text-shadow: 0 0 8px white;
       letter-spacing: 0.05em;
+      line-height: 1.2;
     }
 
     .dashboard-welcome {
       font-size: 14px;
       color: rgba(255,255,255,0.95);
+      margin-top: 6px;
+      max-width: min(220px, 58vw);
+      text-align: right;
+      line-height: 1.35;
     }
 
     .stats-grid {

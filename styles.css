@@ -155,8 +155,8 @@ body {
   left: 1px;
   top: 38px;
   margin: 0;
-  font-family: var(--font-display);
-  font-weight: 600;
+  font-family: "Oxanium", system-ui, sans-serif;
+  font-weight: 400;
   font-size: clamp(36px, 4.34vw, 62.469px);
   line-height: normal;
   text-shadow: 0 0 10.62px #ffffff;
@@ -168,8 +168,8 @@ body {
   left: 85.11px;
   top: 108.18px;
   margin: 0;
-  font-family: var(--font-display);
-  font-weight: 600;
+  font-family: "Oxanium", system-ui, sans-serif;
+  font-weight: 400;
   font-size: clamp(28px, 3.47vw, 49.975px);
   line-height: normal;
   text-shadow: 0 0 10.62px #ffffff;
