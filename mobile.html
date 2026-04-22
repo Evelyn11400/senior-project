@@ -796,7 +796,7 @@
         <div class="title">Actions</div>
         <div class="actions-buttons">
           <button type="button" id="btn-build-station">Build Station</button>
-          <button type="button">Repair Station</button>
+          <button type="button" id="btn-repair-station">Repair Station</button>
         </div>
         <p class="build-tokens-hint" id="build-tokens-hint" aria-live="polite"></p>
       </div>
@@ -842,6 +842,39 @@
         <div class="build-confirm-actions">
           <button type="button" class="btn-confirm" id="build-confirm-modal-yes">Confirm</button>
           <button type="button" class="build-confirm-cancel" id="build-confirm-modal-no">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="name-modal-backdrop hidden"
+      id="repair-none-modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="repair-none-modal-text"
+      aria-hidden="true"
+    >
+      <div class="name-modal">
+        <p class="name-confirm-copy" id="repair-none-modal-text">
+          No station currently needs repair, or there are no stations on the map yet.
+        </p>
+        <button type="button" class="btn-confirm" id="repair-none-modal-ok">OK</button>
+      </div>
+    </div>
+
+    <div
+      class="name-modal-backdrop hidden"
+      id="repair-confirm-modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="repair-confirm-modal-text"
+      aria-hidden="true"
+    >
+      <div class="name-modal">
+        <p class="name-confirm-copy" id="repair-confirm-modal-text"></p>
+        <div class="build-confirm-actions">
+          <button type="button" class="btn-confirm" id="repair-confirm-modal-yes">Confirm</button>
+          <button type="button" class="build-confirm-cancel" id="repair-confirm-modal-no">Cancel</button>
         </div>
       </div>
     </div>
@@ -1061,6 +1094,28 @@
       var confirmNo = document.getElementById("build-confirm-modal-no");
       var publishing = false;
 
+      var stationsCache = [];
+      var DECAY_MS = 3600000;
+      var pendingRepairStationId = "";
+
+      var btnRepair = document.getElementById("btn-repair-station");
+      var repairNoneBackdrop = document.getElementById("repair-none-modal-backdrop");
+      var repairNoneOk = document.getElementById("repair-none-modal-ok");
+      var repairConfirmBackdrop = document.getElementById("repair-confirm-modal-backdrop");
+      var repairConfirmText = document.getElementById("repair-confirm-modal-text");
+      var repairConfirmYes = document.getElementById("repair-confirm-modal-yes");
+      var repairConfirmNo = document.getElementById("repair-confirm-modal-no");
+      var repairPublishing = false;
+
+      function newBuildStationId() {
+        if (typeof crypto !== "undefined" && crypto.randomUUID) {
+          try {
+            return crypto.randomUUID();
+          } catch (eId) {}
+        }
+        return "s-" + Date.now() + "-" + Math.random().toString(36).slice(2, 10);
+      }
+
       function getStoredNameForQuota() {
         try {
           return (localStorage.getItem("blackout-reboot-name") || "").trim();
@@ -1166,6 +1221,7 @@
           action: "build",
           t: Date.now(),
           name: nm || undefined,
+          stationId: newBuildStationId(),
         });
         B.publish(t, payload, { qos: 1 }, function (err) {
           publishing = false;
@@ -1206,6 +1262,133 @@
       });
       updateBuildTokensHint();
 
+      function payloadToUtf8Stations(payload) {
+        if (payload == null) return "";
+        if (typeof payload === "string") return payload;
+        if (payload instanceof ArrayBuffer) {
+          return new TextDecoder("utf-8").decode(new Uint8Array(payload));
+        }
+        if (payload instanceof Uint8Array) {
+          return new TextDecoder("utf-8").decode(payload);
+        }
+        try {
+          return new TextDecoder("utf-8").decode(new Uint8Array(payload));
+        } catch (e) {
+          return String(payload);
+        }
+      }
+
+      function maintenanceFromBuiltAt(builtAt) {
+        var elapsed = Date.now() - builtAt;
+        if (elapsed <= 0) return 100;
+        var m = 100 * (1 - elapsed / DECAY_MS);
+        return Math.max(0, Math.min(100, m));
+      }
+
+      function formatStationTitle(name) {
+        var n = (name || "").trim() || "Someone";
+        if (n.length > 28) n = n.slice(0, 25) + "…";
+        return n + "'s station";
+      }
+
+      function pickLowestMaintenanceStation() {
+        if (!stationsCache.length) return null;
+        var best = null;
+        var bestH = Infinity;
+        for (var i = 0; i < stationsCache.length; i++) {
+          var s = stationsCache[i];
+          if (!s || typeof s.builtAt !== "number" || !isFinite(s.builtAt)) continue;
+          if (typeof s.id !== "string" || !s.id.trim()) continue;
+          var h = maintenanceFromBuiltAt(s.builtAt);
+          if (h < bestH) {
+            bestH = h;
+            best = s;
+          }
+        }
+        if (!best) return null;
+        if (bestH > 99.9) return null;
+        return { station: best, health: bestH };
+      }
+
+      function openRepairNoneModal() {
+        if (!repairNoneBackdrop) return;
+        repairNoneBackdrop.classList.remove("hidden");
+        repairNoneBackdrop.setAttribute("aria-hidden", "false");
+      }
+
+      function closeRepairNoneModal() {
+        if (!repairNoneBackdrop) return;
+        repairNoneBackdrop.classList.add("hidden");
+        repairNoneBackdrop.setAttribute("aria-hidden", "true");
+      }
+
+      function openRepairConfirmModal(htmlLine) {
+        if (!repairConfirmBackdrop || !repairConfirmText) return;
+        repairConfirmText.textContent = htmlLine;
+        repairConfirmBackdrop.classList.remove("hidden");
+        repairConfirmBackdrop.setAttribute("aria-hidden", "false");
+      }
+
+      function closeRepairConfirmModal() {
+        if (!repairConfirmBackdrop) return;
+        repairConfirmBackdrop.classList.add("hidden");
+        repairConfirmBackdrop.setAttribute("aria-hidden", "true");
+      }
+
+      function runRepairPublish() {
+        var B = window.BlackoutMQTT;
+        var rt = window.BLACKOUT_REPAIR_TOPIC || "blackout/reboot/repair";
+        if (!B || typeof B.publish !== "function" || !B.client) return;
+        if (!pendingRepairStationId) return;
+        repairPublishing = true;
+        var payload = JSON.stringify({
+          action: "repair",
+          stationId: pendingRepairStationId,
+          t: Date.now(),
+        });
+        B.publish(rt, payload, { qos: 1 }, function (err) {
+          repairPublishing = false;
+          pendingRepairStationId = "";
+          if (err) console.warn("[mobile] repair publish:", err);
+        });
+      }
+
+      function attachStationsFeed() {
+        var B = window.BlackoutMQTT;
+        if (!B || !B.client || B.__blackoutStationsInbound) return;
+        B.__blackoutStationsInbound = true;
+        var st = window.BLACKOUT_STATIONS_TOPIC || "blackout/reboot/stations";
+        B.client.on("message", function (topic, payload) {
+          if (topic !== st) return;
+          try {
+            var o = JSON.parse(payloadToUtf8Stations(payload));
+            if (o && Array.isArray(o.stations)) stationsCache = o.stations;
+          } catch (eSt) {}
+        });
+        B.subscribe(st, function (err) {
+          if (err) console.warn("[mobile] subscribe stations:", err);
+        });
+      }
+
+      window.addEventListener("blackout-mqtt-connect", attachStationsFeed);
+      if (window.BlackoutMQTT && window.BlackoutMQTT.connected) attachStationsFeed();
+
+      if (repairNoneOk && repairNoneBackdrop) {
+        repairNoneOk.addEventListener("click", closeRepairNoneModal);
+      }
+      if (repairConfirmYes && repairConfirmBackdrop) {
+        repairConfirmYes.addEventListener("click", function () {
+          closeRepairConfirmModal();
+          runRepairPublish();
+        });
+      }
+      if (repairConfirmNo && repairConfirmBackdrop) {
+        repairConfirmNo.addEventListener("click", function () {
+          closeRepairConfirmModal();
+          pendingRepairStationId = "";
+        });
+      }
+
       if (!btn) return;
       btn.addEventListener("click", function () {
         if (publishing) return;
@@ -1219,6 +1402,29 @@
 
         openBuildConfirmModal();
       });
+
+      if (btnRepair) {
+        btnRepair.addEventListener("click", function () {
+          if (repairPublishing) return;
+          var B = window.BlackoutMQTT;
+          if (!B || typeof B.publish !== "function" || !B.client) return;
+          var pick = pickLowestMaintenanceStation();
+          if (!pick) {
+            openRepairNoneModal();
+            return;
+          }
+          var title = formatStationTitle(pick.station.name);
+          var pct = Math.round(pick.health);
+          pendingRepairStationId = pick.station.id.trim();
+          openRepairConfirmModal(
+            "This will repair " +
+              title +
+              " (maintenance at " +
+              pct +
+              "%). The station with the lowest maintenance is selected by default. Continue?"
+          );
+        });
+      }
     })();
   </script>
 </body>

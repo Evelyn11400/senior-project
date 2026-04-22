@@ -3,6 +3,7 @@
  * Cross-device traffic uses the broker only — no local /api or other app backend.
  * Names: publish/subscribe BLACKOUT_MQTT_NAME_TOPIC (default blackout/reboot/names).
  * Build markers: topic BLACKOUT_BUILD_TOPIC (default blackout/reboot/build).
+ * Station list + repair: BLACKOUT_STATIONS_TOPIC, BLACKOUT_REPAIR_TOPIC.
  *
  * If `mqtt-config.js` sets `window.BLACKOUT_MQTT_CONFIG`, non-empty fields override these
  * defaults (same broker/credentials as MQtest.html).
@@ -37,6 +38,8 @@
     clientId: "",
     nameTopic: "blackout/reboot/names",
     buildTopic: "blackout/reboot/build",
+    stationsTopic: "blackout/reboot/stations",
+    repairTopic: "blackout/reboot/repair",
   };
 
   function mergeMqttConfig() {
@@ -59,9 +62,13 @@
   var cfg = mergeMqttConfig();
   var NAME_TOPIC = cfg.nameTopic || "blackout/reboot/names";
   var BUILD_TOPIC = cfg.buildTopic || "blackout/reboot/build";
+  var STATIONS_TOPIC = cfg.stationsTopic || "blackout/reboot/stations";
+  var REPAIR_TOPIC = cfg.repairTopic || "blackout/reboot/repair";
   if (typeof window !== "undefined") {
     window.BLACKOUT_MQTT_NAME_TOPIC = NAME_TOPIC;
     window.BLACKOUT_BUILD_TOPIC = BUILD_TOPIC;
+    window.BLACKOUT_STATIONS_TOPIC = STATIONS_TOPIC;
+    window.BLACKOUT_REPAIR_TOPIC = REPAIR_TOPIC;
   }
 
   function attachStub() {

@@ -82,6 +82,17 @@ body {
   pointer-events: none;
 }
 
+.map-marker-health {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  fill: #c8f7c4;
+  paint-order: stroke fill;
+  stroke: rgba(0, 0, 0, 0.55);
+  stroke-width: 2px;
+  stroke-linejoin: round;
+}
+
 .map-marker-label {
   font-family: var(--font-ui);
   font-size: 11px;

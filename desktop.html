@@ -270,9 +270,70 @@
 
         var topic = window.BLACKOUT_MQTT_NAME_TOPIC || "blackout/reboot/names";
         var buildTopic = window.BLACKOUT_BUILD_TOPIC || "blackout/reboot/build";
+        var repairTopic = window.BLACKOUT_REPAIR_TOPIC || "blackout/reboot/repair";
+        var stationsTopic = window.BLACKOUT_STATIONS_TOPIC || "blackout/reboot/stations";
         var client = B.client;
         var markersG = document.getElementById("map-markers");
+        var stationEntries = [];
         var buildRegionPath = document.getElementById("map-build-region");
+
+        var MAINTENANCE_DECAY_MS = 3600000;
+
+        function newStationId() {
+          if (typeof crypto !== "undefined" && crypto.randomUUID) {
+            try {
+              return crypto.randomUUID();
+            } catch (e0) {}
+          }
+          return "s-" + Date.now() + "-" + Math.random().toString(36).slice(2, 10);
+        }
+
+        function maintenancePercentFromBuiltAt(builtAt) {
+          var elapsed = Date.now() - builtAt;
+          if (elapsed <= 0) return 100;
+          var m = 100 * (1 - elapsed / MAINTENANCE_DECAY_MS);
+          return Math.max(0, Math.min(100, m));
+        }
+
+        function publishStationsSnapshot() {
+          if (!B || typeof B.publish !== "function") return;
+          var list = stationEntries.map(function (s) {
+            return { id: s.id, name: s.owner || "", builtAt: s.builtAt };
+          });
+          try {
+            B.publish(
+              stationsTopic,
+              JSON.stringify({ v: 1, stations: list }),
+              { qos: 0 }
+            );
+          } catch (ePub) {}
+        }
+
+        function updateAllMarkerHealthText() {
+          for (var i = 0; i < stationEntries.length; i++) {
+            var s = stationEntries[i];
+            if (!s.pctEl) continue;
+            var pct = Math.round(maintenancePercentFromBuiltAt(s.builtAt));
+            s.pctEl.textContent = String(pct) + "%";
+          }
+        }
+
+        function applyRepairByStationId(stationId) {
+          var sid = (stationId || "").trim();
+          if (!sid) return false;
+          for (var i = 0; i < stationEntries.length; i++) {
+            if (stationEntries[i].id === sid) {
+              stationEntries[i].builtAt = Date.now();
+              updateAllMarkerHealthText();
+              publishStationsSnapshot();
+              return true;
+            }
+          }
+          return false;
+        }
+
+        setInterval(updateAllMarkerHealthText, 1000);
+        setInterval(publishStationsSnapshot, 25000);
 
         el.textContent = "正在连接 HiveMQ…";
 
@@ -360,13 +421,27 @@
 
         function addBuildMarkerDot(payload) {
           if (!markersG) return;
+          var raw = payloadToUtf8(payload);
+          var o = null;
+          try {
+            o = JSON.parse(raw);
+          } catch (eParse) {}
+          var stationId = "";
+          if (o && typeof o.stationId === "string" && o.stationId.trim())
+            stationId = o.stationId.trim();
+          if (!stationId) stationId = newStationId();
+          for (var di = 0; di < stationEntries.length; di++) {
+            if (stationEntries[di].id === stationId) return;
+          }
+          var builtAt =
+            o && typeof o.t === "number" && isFinite(o.t) ? o.t : Date.now();
+
           var margin = 48;
           var maxX = 1474 - margin;
           var maxY = 1024 - margin;
           var x;
           var y;
           try {
-            var o = JSON.parse(payloadToUtf8(payload));
             if (
               o &&
               typeof o.x === "number" &&
@@ -392,10 +467,23 @@
           var ns = "http://www.w3.org/2000/svg";
           var g = document.createElementNS(ns, "g");
           g.setAttribute("class", "map-marker-group");
+          g.setAttribute("data-station-id", stationId);
+
+          var pctEl = document.createElementNS(ns, "text");
+          pctEl.setAttribute("class", "map-marker-health");
+          pctEl.setAttribute("x", String(x));
+          pctEl.setAttribute("y", String(y - r - 22));
+          pctEl.setAttribute("text-anchor", "middle");
+          pctEl.appendChild(
+            document.createTextNode(
+              String(Math.round(maintenancePercentFromBuiltAt(builtAt))) + "%"
+            )
+          );
+
           var textEl = document.createElementNS(ns, "text");
           textEl.setAttribute("class", "map-marker-label");
           textEl.setAttribute("x", String(x));
-          textEl.setAttribute("y", String(y - r - 5));
+          textEl.setAttribute("y", String(y - r - 6));
           textEl.setAttribute("text-anchor", "middle");
           textEl.appendChild(document.createTextNode(labelStr));
           var c = document.createElementNS(ns, "circle");
@@ -403,9 +491,18 @@
           c.setAttribute("cy", String(y));
           c.setAttribute("r", String(r));
           c.setAttribute("fill", "#F69E7B");
+          g.appendChild(pctEl);
           g.appendChild(textEl);
           g.appendChild(c);
           markersG.appendChild(g);
+
+          stationEntries.push({
+            id: stationId,
+            owner: owner,
+            builtAt: builtAt,
+            pctEl: pctEl,
+          });
+          publishStationsSnapshot();
         }
 
         function onBrokerConnect() {
@@ -414,6 +511,9 @@
           });
           B.subscribe(buildTopic, function (err) {
             if (err) console.error("[desktop] subscribe build:", err);
+          });
+          B.subscribe(repairTopic, function (err) {
+            if (err) console.error("[desktop] subscribe repair:", err);
           });
           render();
         }
@@ -424,6 +524,14 @@
         client.on("message", function (recvTopic, payload) {
           if (recvTopic === buildTopic) {
             addBuildMarkerDot(payload);
+            return;
+          }
+          if (recvTopic === repairTopic) {
+            try {
+              var ro = JSON.parse(payloadToUtf8(payload));
+              if (ro && ro.action === "repair" && typeof ro.stationId === "string")
+                applyRepairByStationId(ro.stationId);
+            } catch (eR) {}
             return;
           }
           if (recvTopic !== topic) return;
