@@ -332,6 +332,14 @@ body {
   flex-shrink: 0;
 }
 
+/* One wide panel ≈ three former columns (435×3 + gap 26×2) */
+.dashboard__bottom-panel--contributors-wide {
+  width: min(1357px, 100%);
+  height: auto;
+  min-height: 120px;
+  max-height: 220px;
+}
+
 .dashboard__bottom-panel--names {
   padding: 16px 18px;
   box-sizing: border-box;
@@ -342,26 +350,36 @@ body {
   text-align: left;
 }
 
-.dashboard__names-label {
+.dashboard__names-row {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: baseline;
+  gap: 0.4rem 0.65rem;
   font-family: var(--font-ui);
-  font-size: clamp(12px, 1vw, 14px);
-  color: rgba(255, 255, 255, 0.65);
-  margin-bottom: 10px;
+  color: #fff;
+}
+
+.dashboard__names-heading {
+  font-size: clamp(11px, 0.95vw, 13px);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .dashboard__names-list {
   margin: 0;
   padding: 0;
   font-family: var(--font-ui);
-  font-size: clamp(13px, 1.1vw, 15px);
-  line-height: 1.45;
+  font-size: clamp(11px, 0.95vw, 13px);
+  line-height: 1.55;
   color: #fff;
-  white-space: pre-wrap;
+  white-space: normal;
   word-break: break-word;
   flex: 1;
-  min-height: 0;
-  overflow: auto;
+  min-width: 0;
 }
 
 /* Mobile iPhone layout (separate Figma frame) */

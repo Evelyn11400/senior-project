@@ -120,12 +120,15 @@
 
         <section class="dashboard__bottom" aria-label="Detail panels">
           <div class="dashboard__bottom-inner">
-            <div class="dashboard__bottom-panel dashboard__bottom-panel--names" aria-live="polite">
-              <div class="dashboard__names-label">Contributors</div>
-              <pre class="dashboard__names-list" id="desktop-names-list"></pre>
+            <div
+              class="dashboard__bottom-panel dashboard__bottom-panel--names dashboard__bottom-panel--contributors-wide"
+              aria-live="polite"
+            >
+              <div class="dashboard__names-row">
+                <span class="dashboard__names-heading">Contributors</span>
+                <div class="dashboard__names-list" id="desktop-names-list"></div>
+              </div>
             </div>
-            <div class="dashboard__bottom-panel"></div>
-            <div class="dashboard__bottom-panel"></div>
           </div>
         </section>
       </div>
@@ -203,8 +206,19 @@
 
         var names = [];
 
+        function displayNameForList(n) {
+          var t = String(n || "").trim();
+          if (!t) return "";
+          if (t.length > 20) return t.slice(0, 17) + "…";
+          return t;
+        }
+
         function render() {
-          el.textContent = names.length ? names.join("\n") : "—";
+          if (!names.length) {
+            el.textContent = "—";
+            return;
+          }
+          el.textContent = names.map(displayNameForList).join(" · ");
         }
 
         function payloadToUtf8(payload) {
