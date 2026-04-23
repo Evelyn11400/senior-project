@@ -345,7 +345,7 @@ body {
 .dashboard__names-label {
   font-family: var(--font-ui);
   font-size: clamp(12px, 1vw, 14px);
-  color: rgba(255, 255, 255, 0.65);
+  color: #f69e7b;
   margin-bottom: 10px;
   flex-shrink: 0;
 }
