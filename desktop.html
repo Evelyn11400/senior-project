@@ -338,17 +338,20 @@
             var st = stationEntries[i];
             if (!st || st.id !== sid || !st.gEl) continue;
             st.gEl.classList.remove("map-marker-group--highlight");
-            // Force restart animation.
+            // Force restart transition.
             void st.gEl.getBoundingClientRect();
             st.gEl.classList.add("map-marker-group--highlight");
-            setTimeout(
-              function (el) {
-                try {
-                  el.classList.remove("map-marker-group--highlight");
-                } catch (e0) {}
-              }.bind(null, st.gEl),
-              950
-            );
+            try {
+              if (st.gEl.__highlightTimer) clearTimeout(st.gEl.__highlightTimer);
+            } catch (e0) {}
+            st.gEl.__highlightTimer = setTimeout(function () {
+              try {
+                st.gEl.classList.remove("map-marker-group--highlight");
+              } catch (e1) {}
+              try {
+                st.gEl.__highlightTimer = 0;
+              } catch (e2) {}
+            }, 30000);
             return;
           }
         }
