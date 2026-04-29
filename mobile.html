@@ -579,6 +579,56 @@
       cursor: pointer;
     }
 
+    .story-behind-btn {
+      width: 100%;
+      margin-top: 12px;
+      padding: 10px 14px;
+      font-family: 'Oxanium', sans-serif;
+      font-size: 13px;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.92);
+      background: rgba(0, 0, 0, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    .story-behind-btn:hover {
+      filter: brightness(1.05);
+    }
+
+    .story-modal .name-modal {
+      background: #eedad1;
+      border-radius: 16px;
+      text-align: left;
+      padding: 20px 18px;
+    }
+
+    .story-modal .story-meta {
+      font-family: 'Oxanium', sans-serif;
+      font-size: 16px;
+      color: #2a2f42;
+      line-height: 1.35;
+      margin-bottom: 10px;
+      white-space: pre-line;
+    }
+
+    .story-modal .story-body {
+      font-family: 'Oxanium', sans-serif;
+      font-size: 15px;
+      color: #2a2f42;
+      line-height: 1.45;
+      max-height: 320px;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
+
+    .story-modal .story-actions {
+      margin-top: 14px;
+      display: flex;
+      justify-content: center;
+    }
+
     .build-tokens-hint {
       margin-top: 10px;
       font-size: 12px;
@@ -799,6 +849,9 @@
           <button type="button" id="btn-repair-station">Repair Station</button>
         </div>
         <p class="build-tokens-hint" id="build-tokens-hint" aria-live="polite"></p>
+        <button type="button" class="story-behind-btn" id="btn-story-behind">
+          Story behind
+        </button>
       </div>
     </section>
 
@@ -892,6 +945,28 @@
           Success. Please check the big screen.
         </p>
         <button type="button" class="btn-confirm" id="action-success-modal-ok">OK</button>
+      </div>
+    </div>
+
+    <div
+      class="name-modal-backdrop hidden story-modal"
+      id="story-modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="story-modal-title"
+      aria-hidden="true"
+    >
+      <div class="name-modal">
+        <div class="story-meta" id="story-modal-title">Time: 2501 A.D.
+Location: Earth</div>
+        <div class="story-body">
+When Earth's exploitable natural resources were completely depleted, humanity entered an era of resource scarcity. The planet had been dug through, leaving vast craters in many places, with dust filling the air. Factories ground to a halt, and people plunged into panic.
+
+People finally realized that they must utilize every possible resource. In addition to the widespread adoption of traditional clean energy sources, people have also invented other devices to capture minor moves in the air to generate electrical charge.
+        </div>
+        <div class="story-actions">
+          <button type="button" class="btn-confirm" id="story-modal-ok">OK</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1132,6 +1207,10 @@
       var successBackdrop = document.getElementById("action-success-modal-backdrop");
       var successText = document.getElementById("action-success-modal-text");
       var successOk = document.getElementById("action-success-modal-ok");
+
+      var btnStoryBehind = document.getElementById("btn-story-behind");
+      var storyBackdrop = document.getElementById("story-modal-backdrop");
+      var storyOk = document.getElementById("story-modal-ok");
 
       var statActiveStations = document.getElementById("stat-active-stations");
       var statStationsNeedRepair = document.getElementById("stat-stations-need-repair");
@@ -1409,6 +1488,18 @@
         successBackdrop.setAttribute("aria-hidden", "true");
       }
 
+      function openStoryModal() {
+        if (!storyBackdrop) return;
+        storyBackdrop.classList.remove("hidden");
+        storyBackdrop.setAttribute("aria-hidden", "false");
+      }
+
+      function closeStoryModal() {
+        if (!storyBackdrop) return;
+        storyBackdrop.classList.add("hidden");
+        storyBackdrop.setAttribute("aria-hidden", "true");
+      }
+
       function runRepairPublish() {
         var B = window.BlackoutMQTT;
         var rt = window.BLACKOUT_REPAIR_TOPIC || "blackout/reboot/repair";
@@ -1450,6 +1541,13 @@
 
       if (successOk && successBackdrop) {
         successOk.addEventListener("click", closeSuccessModal);
+      }
+
+      if (btnStoryBehind) {
+        btnStoryBehind.addEventListener("click", openStoryModal);
+      }
+      if (storyOk && storyBackdrop) {
+        storyOk.addEventListener("click", closeStoryModal);
       }
 
       window.addEventListener("blackout-mqtt-connect", attachStationsStatsFeed);
