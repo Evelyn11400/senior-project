@@ -878,6 +878,22 @@
         </div>
       </div>
     </div>
+
+    <div
+      class="name-modal-backdrop hidden"
+      id="action-success-modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="action-success-modal-text"
+      aria-hidden="true"
+    >
+      <div class="name-modal">
+        <p class="name-confirm-copy" id="action-success-modal-text">
+          Success. Please check the big screen.
+        </p>
+        <button type="button" class="btn-confirm" id="action-success-modal-ok">OK</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -1113,6 +1129,10 @@
       var repairConfirmNo = document.getElementById("repair-confirm-modal-no");
       var repairPublishing = false;
 
+      var successBackdrop = document.getElementById("action-success-modal-backdrop");
+      var successText = document.getElementById("action-success-modal-text");
+      var successOk = document.getElementById("action-success-modal-ok");
+
       function newBuildStationId() {
         if (typeof crypto !== "undefined" && crypto.randomUUID) {
           try {
@@ -1238,6 +1258,7 @@
           }
           setBuildCount(getBuildCount() + 1);
           updateBuildTokensHint();
+          openSuccessModal("Success. Please check the big screen.");
         });
       }
 
@@ -1295,6 +1316,20 @@
         repairConfirmBackdrop.setAttribute("aria-hidden", "true");
       }
 
+      function openSuccessModal(message) {
+        if (!successBackdrop || !successText) return;
+        if (typeof message === "string" && message.trim())
+          successText.textContent = message.trim();
+        successBackdrop.classList.remove("hidden");
+        successBackdrop.setAttribute("aria-hidden", "false");
+      }
+
+      function closeSuccessModal() {
+        if (!successBackdrop) return;
+        successBackdrop.classList.add("hidden");
+        successBackdrop.setAttribute("aria-hidden", "true");
+      }
+
       function runRepairPublish() {
         var B = window.BlackoutMQTT;
         var rt = window.BLACKOUT_REPAIR_TOPIC || "blackout/reboot/repair";
@@ -1311,7 +1346,11 @@
         B.publish(rt, payload, { qos: 1 }, function (err) {
           clearTimeout(failSafe);
           repairPublishing = false;
-          if (err) console.warn("[mobile] repair publish:", err);
+          if (err) {
+            console.warn("[mobile] repair publish:", err);
+            return;
+          }
+          openSuccessModal("Success. Please check the big screen.");
         });
       }
 
@@ -1328,6 +1367,10 @@
         repairConfirmNo.addEventListener("click", function () {
           closeRepairConfirmModal();
         });
+      }
+
+      if (successOk && successBackdrop) {
+        successOk.addEventListener("click", closeSuccessModal);
       }
 
       if (!btn) return;

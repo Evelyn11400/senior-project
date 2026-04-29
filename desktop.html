@@ -321,6 +321,38 @@
           return String(p | 0) + "%";
         }
 
+        function markerPaletteForPct(pct) {
+          if (pct >= 70 - 1e-9) {
+            return { dot: "#43d17a", text: "#43d17a" };
+          }
+          if (pct < 30 - 1e-9) {
+            return { dot: "#ff4d4d", text: "#ff4d4d" };
+          }
+          return { dot: "#F69E7B", text: null };
+        }
+
+        function highlightStationById(stationId) {
+          var sid = (stationId || "").trim();
+          if (!sid) return;
+          for (var i = 0; i < stationEntries.length; i++) {
+            var st = stationEntries[i];
+            if (!st || st.id !== sid || !st.gEl) continue;
+            st.gEl.classList.remove("map-marker-group--highlight");
+            // Force restart animation.
+            void st.gEl.getBoundingClientRect();
+            st.gEl.classList.add("map-marker-group--highlight");
+            setTimeout(
+              function (el) {
+                try {
+                  el.classList.remove("map-marker-group--highlight");
+                } catch (e0) {}
+              }.bind(null, st.gEl),
+              950
+            );
+            return;
+          }
+        }
+
         /** +5% per repair; if already >= 95%, one repair sets to 100%. */
         function maintenancePercentAfterRepair(cur) {
           if (cur >= 100 - 1e-9) return cur;
@@ -348,6 +380,10 @@
             if (!s.pctEl) continue;
             var pct = maintenancePercentFromBuiltAt(s.builtAt);
             s.pctEl.textContent = maintenancePctLabel(pct);
+            var pal = markerPaletteForPct(pct);
+            if (s.dotEl && pal.dot) s.dotEl.setAttribute("fill", pal.dot);
+            if (s.labelEl) s.labelEl.setAttribute("fill", pal.text || "#f4f4f5");
+            if (s.pctEl) s.pctEl.setAttribute("fill", pal.text || "#c8f7c4");
           }
         }
 
@@ -367,6 +403,7 @@
                   ((100 - newM) * MAINTENANCE_DECAY_MS) / 100);
               updateAllMarkerHealthText();
               publishStationsSnapshot();
+              highlightStationById(sid);
               return true;
             }
           }
@@ -400,6 +437,7 @@
               ((100 - newM) * MAINTENANCE_DECAY_MS) / 100);
           updateAllMarkerHealthText();
           publishStationsSnapshot();
+          highlightStationById(st0.id);
           return true;
         }
 
@@ -573,7 +611,12 @@
             owner: owner,
             builtAt: builtAt,
             pctEl: pctEl,
+            labelEl: textEl,
+            dotEl: c,
+            gEl: g,
           });
+          updateAllMarkerHealthText();
+          highlightStationById(stationId);
           publishStationsSnapshot();
         }
 
