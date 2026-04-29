@@ -96,17 +96,17 @@
             </article>
             <article class="stat-card">
               <div class="stat-card__inner">
-                <span class="stat-card__label">Blackout Rate</span>
+                <span class="stat-card__label">Active Stations</span>
                 <p class="stat-card__value">
-                  <span class="stat-card__number">67</span><span class="stat-card__unit">%</span>
+                  <span class="stat-card__number" id="desktop-stat-active-stations">—</span>
                 </p>
               </div>
             </article>
             <article class="stat-card">
               <div class="stat-card__inner">
-                <span class="stat-card__label">Blackout Rate</span>
+                <span class="stat-card__label">Stations Need to Repair</span>
                 <p class="stat-card__value">
-                  <span class="stat-card__number">67</span><span class="stat-card__unit">%</span>
+                  <span class="stat-card__number" id="desktop-stat-stations-need-repair">—</span>
                 </p>
               </div>
             </article>
@@ -290,6 +290,10 @@
         var markersG = document.getElementById("map-markers");
         var stationEntries = [];
         var buildRegionPath = document.getElementById("map-build-region");
+        var statActiveStations = document.getElementById("desktop-stat-active-stations");
+        var statStationsNeedRepair = document.getElementById(
+          "desktop-stat-stations-need-repair"
+        );
 
         var MAINTENANCE_DECAY_MS = 40 * 60 * 1000;
         /** After build/repair, stay at 100% briefly, then linear decay to 0% over MAINTENANCE_DECAY_MS. */
@@ -378,6 +382,7 @@
         }
 
         function updateAllMarkerHealthText() {
+          var needRepair = 0;
           for (var i = 0; i < stationEntries.length; i++) {
             var s = stationEntries[i];
             if (!s.pctEl) continue;
@@ -387,7 +392,12 @@
             if (s.dotEl && pal.dot) s.dotEl.setAttribute("fill", pal.dot);
             if (s.labelEl) s.labelEl.setAttribute("fill", pal.text || "#f4f4f5");
             if (s.pctEl) s.pctEl.setAttribute("fill", pal.text || "#c8f7c4");
+            if (pct < 90 - 1e-6) needRepair++;
           }
+          if (statActiveStations)
+            statActiveStations.textContent = String(stationEntries.length);
+          if (statStationsNeedRepair)
+            statStationsNeedRepair.textContent = String(needRepair);
         }
 
         function applyRepairByStationId(stationId) {
