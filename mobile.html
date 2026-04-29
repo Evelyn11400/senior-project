@@ -785,11 +785,11 @@
         </div>
         <div class="stat-card">
           <div class="label">Active Stations</div>
-          <div class="value">18</div>
+          <div class="value" id="stat-active-stations">—</div>
         </div>
         <div class="stat-card">
           <div class="label">Stations Need to Repair</div>
-          <div class="value">5</div>
+          <div class="value" id="stat-stations-need-repair">—</div>
         </div>
       </div>
       <div class="actions-section">
@@ -1133,6 +1133,85 @@
       var successText = document.getElementById("action-success-modal-text");
       var successOk = document.getElementById("action-success-modal-ok");
 
+      var statActiveStations = document.getElementById("stat-active-stations");
+      var statStationsNeedRepair = document.getElementById("stat-stations-need-repair");
+
+      var stationsCache = [];
+      var MAINTENANCE_DECAY_MS = 40 * 60 * 1000;
+      var MAINTENANCE_PLATEAU_MS = 250;
+      var stationsStatsTimer = 0;
+
+      function payloadToUtf8Stations(payload) {
+        if (payload == null) return "";
+        if (typeof payload === "string") return payload;
+        if (payload instanceof ArrayBuffer) {
+          return new TextDecoder("utf-8").decode(new Uint8Array(payload));
+        }
+        if (payload instanceof Uint8Array) {
+          return new TextDecoder("utf-8").decode(payload);
+        }
+        try {
+          return new TextDecoder("utf-8").decode(new Uint8Array(payload));
+        } catch (e) {
+          return String(payload);
+        }
+      }
+
+      function maintenancePercentFromBuiltAt(builtAt) {
+        var elapsed = Date.now() - builtAt;
+        if (elapsed <= 0) return 100;
+        if (elapsed <= MAINTENANCE_PLATEAU_MS) return 100;
+        var decayElapsed = elapsed - MAINTENANCE_PLATEAU_MS;
+        var m = 100 * (1 - decayElapsed / MAINTENANCE_DECAY_MS);
+        return Math.max(0, Math.min(100, m));
+      }
+
+      function updateStationsStats() {
+        if (statActiveStations) statActiveStations.textContent = String(stationsCache.length);
+        if (!statStationsNeedRepair) return;
+        var need = 0;
+        for (var i = 0; i < stationsCache.length; i++) {
+          var ba = stationsCache[i].builtAt;
+          if (typeof ba !== "number" || !isFinite(ba)) continue;
+          var pct = maintenancePercentFromBuiltAt(ba);
+          if (pct < 90 - 1e-6) need++;
+        }
+        statStationsNeedRepair.textContent = String(need);
+      }
+
+      function attachStationsStatsFeed() {
+        var B = window.BlackoutMQTT;
+        if (!B || !B.client || B.__blackoutStationsStatsAttached) return;
+        B.__blackoutStationsStatsAttached = true;
+        var st = window.BLACKOUT_STATIONS_TOPIC || "blackout/reboot/stations";
+
+        B.client.on("message", function (topic, payload) {
+          if (topic !== st) return;
+          try {
+            var o = JSON.parse(payloadToUtf8Stations(payload));
+            if (!o || !Array.isArray(o.stations)) return;
+            var next = [];
+            for (var si = 0; si < o.stations.length; si++) {
+              var entry = o.stations[si];
+              if (!entry || typeof entry !== "object") continue;
+              var ba = entry.builtAt;
+              if (typeof ba === "string") ba = parseFloat(ba, 10);
+              if (typeof ba !== "number" || !isFinite(ba)) continue;
+              next.push({ builtAt: ba });
+            }
+            stationsCache = next;
+            updateStationsStats();
+          } catch (eSt) {}
+        });
+        B.subscribe(st, function (err) {
+          if (err) console.warn("[mobile] subscribe stations stats:", err);
+        });
+
+        if (!stationsStatsTimer) {
+          stationsStatsTimer = setInterval(updateStationsStats, 1000);
+        }
+      }
+
       function newBuildStationId() {
         if (typeof crypto !== "undefined" && crypto.randomUUID) {
           try {
@@ -1372,6 +1451,9 @@
       if (successOk && successBackdrop) {
         successOk.addEventListener("click", closeSuccessModal);
       }
+
+      window.addEventListener("blackout-mqtt-connect", attachStationsStatsFeed);
+      if (window.BlackoutMQTT && window.BlackoutMQTT.connected) attachStationsStatsFeed();
 
       if (!btn) return;
       btn.addEventListener("click", function () {
