@@ -82,7 +82,7 @@
               <div class="stat-card__inner">
                 <span class="stat-card__label">Blackout Rate</span>
                 <p class="stat-card__value">
-                  <span class="stat-card__number">67</span><span class="stat-card__unit">%</span>
+                  <span class="stat-card__number" id="desktop-stat-blackout-rate-a">67</span><span class="stat-card__unit">%</span>
                 </p>
               </div>
             </article>
@@ -90,7 +90,7 @@
               <div class="stat-card__inner">
                 <span class="stat-card__label">Blackout Rate</span>
                 <p class="stat-card__value">
-                  <span class="stat-card__number">67</span><span class="stat-card__unit">%</span>
+                  <span class="stat-card__number" id="desktop-stat-blackout-rate-b">67</span><span class="stat-card__unit">%</span>
                 </p>
               </div>
             </article>
@@ -264,7 +264,7 @@
         function stationLabelText(owner) {
           var base = (owner || "").trim() || "Someone";
           if (base.length > 32) base = base.slice(0, 29) + "…";
-          return base + "'s station";
+          return base;
         }
 
         if (typeof mqtt === "undefined") {
@@ -290,10 +290,16 @@
         var markersG = document.getElementById("map-markers");
         var stationEntries = [];
         var buildRegionPath = document.getElementById("map-build-region");
+        var statBlackoutA = document.getElementById("desktop-stat-blackout-rate-a");
+        var statBlackoutB = document.getElementById("desktop-stat-blackout-rate-b");
         var statActiveStations = document.getElementById("desktop-stat-active-stations");
         var statStationsNeedRepair = document.getElementById(
           "desktop-stat-stations-need-repair"
         );
+
+        var LS_BLACKOUT_RATE = "blackout-reboot-blackout-rate";
+        var LS_BLACKOUT_RATE_LAST_TS = "blackout-reboot-blackout-rate-last-ts";
+        var TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 
         var MAINTENANCE_DECAY_MS = 40 * 60 * 1000;
         /** After build/repair, stay at 100% briefly, then linear decay to 0% over MAINTENANCE_DECAY_MS. */
@@ -382,7 +388,9 @@
         }
 
         function updateAllMarkerHealthText() {
+          var now = Date.now();
           var needRepair = 0;
+          var factorSum = 0;
           for (var i = 0; i < stationEntries.length; i++) {
             var s = stationEntries[i];
             if (!s.pctEl) continue;
@@ -393,11 +401,32 @@
             if (s.labelEl) s.labelEl.setAttribute("fill", pal.text || "#f4f4f5");
             if (s.pctEl) s.pctEl.setAttribute("fill", pal.text || "#c8f7c4");
             if (pct < 90 - 1e-6) needRepair++;
+            factorSum += Math.max(0, Math.min(1, pct / 100));
           }
           if (statActiveStations)
             statActiveStations.textContent = String(stationEntries.length);
           if (statStationsNeedRepair)
             statStationsNeedRepair.textContent = String(needRepair);
+
+          // Blackout rate algorithm:
+          // Start at 100%. Each full (100%) station reduces 1% per 2 hours.
+          // Contribution scales linearly with current maintenance percent.
+          // Persist rate and last tick timestamp so it keeps decreasing over time.
+          try {
+            var lastTs = parseFloat(localStorage.getItem(LS_BLACKOUT_RATE_LAST_TS) || "");
+            var curRate = parseFloat(localStorage.getItem(LS_BLACKOUT_RATE) || "");
+            if (!isFinite(curRate)) curRate = 100;
+            if (!isFinite(lastTs)) lastTs = now;
+            var dt = now - lastTs;
+            if (!isFinite(dt) || dt < 0) dt = 0;
+            var dec = (dt / TWO_HOURS_MS) * factorSum; // percent points
+            var next = Math.max(0, Math.min(100, curRate - dec));
+            localStorage.setItem(LS_BLACKOUT_RATE, String(next));
+            localStorage.setItem(LS_BLACKOUT_RATE_LAST_TS, String(now));
+            var disp = String(Math.max(0, Math.min(100, Math.round(next))));
+            if (statBlackoutA) statBlackoutA.textContent = disp;
+            if (statBlackoutB) statBlackoutB.textContent = disp;
+          } catch (eBR) {}
         }
 
         function applyRepairByStationId(stationId) {
