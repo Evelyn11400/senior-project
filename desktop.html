@@ -270,7 +270,7 @@
         if (typeof mqtt === "undefined") {
           setMqttPill("unavailable", "mqtt.js not loaded");
           el.textContent =
-            "无法加载 MQTT 库。请用 http(s) 打开本页，并检查网络能否访问 CDN。";
+            "Can't load MQTT";
           return;
         }
 
@@ -278,7 +278,7 @@
         if (!B || !B.client) {
           setMqttPill("unavailable", "MQTT client not created");
           el.textContent =
-            "MQTT 未初始化（请用 https 打开并检查网络）。桌面与手机共用 HiveMQ WebSocket。";
+            "MQTT not initialized";
           return;
         }
 
@@ -300,6 +300,7 @@
         var LS_BLACKOUT_RATE = "blackout-reboot-blackout-rate";
         var LS_BLACKOUT_RATE_LAST_TS = "blackout-reboot-blackout-rate-last-ts";
         var TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+        var BLACKOUT_TOPIC = "blackout/reboot/blackout-rate";
 
         var ENERGY_TOPIC = "blackout/reboot/energy";
         var LS_TOTAL_KWH = "blackout-reboot-total-kwh";
@@ -459,6 +460,15 @@
             localStorage.setItem(LS_BLACKOUT_RATE_LAST_TS, String(now));
             var disp = String(Math.max(0, Math.min(100, Math.round(next))));
             if (statBlackoutA) statBlackoutA.textContent = disp;
+            try {
+              if (B && typeof B.publish === "function") {
+                B.publish(
+                  BLACKOUT_TOPIC,
+                  JSON.stringify({ v: 1, rate: next, t: now }),
+                  { qos: 1, retain: true }
+                );
+              }
+            } catch (ePubBR) {}
           } catch (eBR) {}
         }
 
