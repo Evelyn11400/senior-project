@@ -839,8 +839,8 @@
           <div class="value">67%</div>
         </div>
         <div class="stat-card">
-          <div class="label">Energy Output</div>
-          <div class="value">145 MW</div>
+          <div class="label">Total Electricity</div>
+          <div class="value" id="stat-total-electricity">—</div>
         </div>
         <div class="stat-card">
           <div class="label">Active Stations</div>
@@ -1241,6 +1241,7 @@ People finally realized that they must utilize every possible resource. In addit
 
       var statActiveStations = document.getElementById("stat-active-stations");
       var statStationsNeedRepair = document.getElementById("stat-stations-need-repair");
+      var statTotalElectricity = document.getElementById("stat-total-electricity");
 
       var stationsCache = [];
       var MAINTENANCE_DECAY_MS = 40 * 60 * 1000;
@@ -1290,27 +1291,43 @@ People finally realized that they must utilize every possible resource. In addit
         if (!B || !B.client || B.__blackoutStationsStatsAttached) return;
         B.__blackoutStationsStatsAttached = true;
         var st = window.BLACKOUT_STATIONS_TOPIC || "blackout/reboot/stations";
+        var et = window.BLACKOUT_ENERGY_TOPIC || "blackout/reboot/energy";
 
         B.client.on("message", function (topic, payload) {
-          if (topic !== st) return;
-          try {
-            var o = JSON.parse(payloadToUtf8Stations(payload));
-            if (!o || !Array.isArray(o.stations)) return;
-            var next = [];
-            for (var si = 0; si < o.stations.length; si++) {
-              var entry = o.stations[si];
-              if (!entry || typeof entry !== "object") continue;
-              var ba = entry.builtAt;
-              if (typeof ba === "string") ba = parseFloat(ba, 10);
-              if (typeof ba !== "number" || !isFinite(ba)) continue;
-              next.push({ builtAt: ba });
-            }
-            stationsCache = next;
-            updateStationsStats();
-          } catch (eSt) {}
+          if (topic === st) {
+            try {
+              var o = JSON.parse(payloadToUtf8Stations(payload));
+              if (!o || !Array.isArray(o.stations)) return;
+              var next = [];
+              for (var si = 0; si < o.stations.length; si++) {
+                var entry = o.stations[si];
+                if (!entry || typeof entry !== "object") continue;
+                var ba = entry.builtAt;
+                if (typeof ba === "string") ba = parseFloat(ba, 10);
+                if (typeof ba !== "number" || !isFinite(ba)) continue;
+                next.push({ builtAt: ba });
+              }
+              stationsCache = next;
+              updateStationsStats();
+            } catch (eSt) {}
+            return;
+          }
+          if (topic === et) {
+            try {
+              var eo = JSON.parse(payloadToUtf8Stations(payload));
+              if (!eo || typeof eo.totalKwh !== "number" || !isFinite(eo.totalKwh))
+                return;
+              if (statTotalElectricity)
+                statTotalElectricity.textContent = eo.totalKwh.toFixed(1) + " kWh";
+            } catch (eE) {}
+            return;
+          }
         });
         B.subscribe(st, function (err) {
           if (err) console.warn("[mobile] subscribe stations stats:", err);
+        });
+        B.subscribe(et, function (err) {
+          if (err) console.warn("[mobile] subscribe energy:", err);
         });
 
         if (!stationsStatsTimer) {

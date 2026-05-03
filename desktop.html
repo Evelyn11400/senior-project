@@ -88,9 +88,9 @@
             </article>
             <article class="stat-card">
               <div class="stat-card__inner">
-                <span class="stat-card__label">Blackout Rate</span>
+                <span class="stat-card__label">Total Electricity</span>
                 <p class="stat-card__value">
-                  <span class="stat-card__number" id="desktop-stat-blackout-rate-b">67</span><span class="stat-card__unit">%</span>
+                  <span class="stat-card__number" id="desktop-stat-total-electricity">0.0</span><span class="stat-card__unit">kWh</span>
                 </p>
               </div>
             </article>
@@ -291,7 +291,7 @@
         var stationEntries = [];
         var buildRegionPath = document.getElementById("map-build-region");
         var statBlackoutA = document.getElementById("desktop-stat-blackout-rate-a");
-        var statBlackoutB = document.getElementById("desktop-stat-blackout-rate-b");
+        var statTotalElectricity = document.getElementById("desktop-stat-total-electricity");
         var statActiveStations = document.getElementById("desktop-stat-active-stations");
         var statStationsNeedRepair = document.getElementById(
           "desktop-stat-stations-need-repair"
@@ -300,6 +300,13 @@
         var LS_BLACKOUT_RATE = "blackout-reboot-blackout-rate";
         var LS_BLACKOUT_RATE_LAST_TS = "blackout-reboot-blackout-rate-last-ts";
         var TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+
+        var ENERGY_TOPIC = "blackout/reboot/energy";
+        var LS_TOTAL_KWH = "blackout-reboot-total-kwh";
+        var LS_TOTAL_KWH_LAST_TS = "blackout-reboot-total-kwh-last-ts";
+        var ONE_HOUR_MS = 60 * 60 * 1000;
+        var KWH_PER_HOUR_AT_FULL = 10;
+        var KWH_COST_PER_REPAIR = 0.5;
 
         var MAINTENANCE_DECAY_MS = 40 * 60 * 1000;
         /** After build/repair, stay at 100% briefly, then linear decay to 0% over MAINTENANCE_DECAY_MS. */
@@ -408,6 +415,33 @@
           if (statStationsNeedRepair)
             statStationsNeedRepair.textContent = String(needRepair);
 
+          // Total electricity (kWh):
+          // Each station at 100% maintenance generates 10 kWh per hour.
+          // Contribution scales linearly with current maintenance percent.
+          // Each successful repair consumes 0.5 kWh (charged at repair event).
+          try {
+            var lastKwhTs = parseFloat(localStorage.getItem(LS_TOTAL_KWH_LAST_TS) || "");
+            var totalKwh = parseFloat(localStorage.getItem(LS_TOTAL_KWH) || "");
+            if (!isFinite(totalKwh)) totalKwh = 0;
+            if (!isFinite(lastKwhTs)) lastKwhTs = now;
+            var dtKwh = now - lastKwhTs;
+            if (!isFinite(dtKwh) || dtKwh < 0) dtKwh = 0;
+            var gen = (dtKwh / ONE_HOUR_MS) * factorSum * KWH_PER_HOUR_AT_FULL;
+            var nextKwh = Math.max(0, totalKwh + gen);
+            localStorage.setItem(LS_TOTAL_KWH, String(nextKwh));
+            localStorage.setItem(LS_TOTAL_KWH_LAST_TS, String(now));
+            if (statTotalElectricity) statTotalElectricity.textContent = nextKwh.toFixed(1);
+            try {
+              if (B && typeof B.publish === "function") {
+                B.publish(
+                  ENERGY_TOPIC,
+                  JSON.stringify({ v: 1, totalKwh: nextKwh, t: now }),
+                  { qos: 1, retain: true }
+                );
+              }
+            } catch (ePubE) {}
+          } catch (eKwh) {}
+
           // Blackout rate algorithm:
           // Start at 100%. Each full (100%) station reduces 1% per 2 hours.
           // Contribution scales linearly with current maintenance percent.
@@ -425,8 +459,28 @@
             localStorage.setItem(LS_BLACKOUT_RATE_LAST_TS, String(now));
             var disp = String(Math.max(0, Math.min(100, Math.round(next))));
             if (statBlackoutA) statBlackoutA.textContent = disp;
-            if (statBlackoutB) statBlackoutB.textContent = disp;
           } catch (eBR) {}
+        }
+
+        function chargeRepairEnergyCost() {
+          var now = Date.now();
+          try {
+            var totalKwh = parseFloat(localStorage.getItem(LS_TOTAL_KWH) || "");
+            if (!isFinite(totalKwh)) totalKwh = 0;
+            var next = Math.max(0, totalKwh - KWH_COST_PER_REPAIR);
+            localStorage.setItem(LS_TOTAL_KWH, String(next));
+            localStorage.setItem(LS_TOTAL_KWH_LAST_TS, String(now));
+            if (statTotalElectricity) statTotalElectricity.textContent = next.toFixed(1);
+            try {
+              if (B && typeof B.publish === "function") {
+                B.publish(
+                  ENERGY_TOPIC,
+                  JSON.stringify({ v: 1, totalKwh: next, t: now }),
+                  { qos: 1, retain: true }
+                );
+              }
+            } catch (ePubE) {}
+          } catch (e0) {}
         }
 
         function applyRepairByStationId(stationId) {
@@ -688,10 +742,11 @@
             try {
               var ro = JSON.parse(payloadToUtf8(payload));
               if (!ro || ro.action !== "repair") return;
-              if (ro.target === "lowest")
-                applyRepairLowestMaintenanceStation();
+              var ok = false;
+              if (ro.target === "lowest") ok = applyRepairLowestMaintenanceStation();
               else if (typeof ro.stationId === "string" && ro.stationId.trim())
-                applyRepairByStationId(ro.stationId);
+                ok = applyRepairByStationId(ro.stationId);
+              if (ok) chargeRepairEnergyCost();
             } catch (eR) {}
             return;
           }
