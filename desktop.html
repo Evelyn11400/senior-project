@@ -454,7 +454,7 @@
             if (!isFinite(lastTs)) lastTs = now;
             var dt = now - lastTs;
             if (!isFinite(dt) || dt < 0) dt = 0;
-            var dec = (dt / TWO_HOURS_MS) * factorSum; // percent points
+            var dec = (dt / TWO_HOURS_MS) * factorSum * 1.1; // percent points (+10% faster)
             var next = Math.max(0, Math.min(100, curRate - dec));
             localStorage.setItem(LS_BLACKOUT_RATE, String(next));
             localStorage.setItem(LS_BLACKOUT_RATE_LAST_TS, String(now));
