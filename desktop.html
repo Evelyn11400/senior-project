@@ -307,7 +307,7 @@
         var LS_TOTAL_KWH_LAST_TS = "blackout-reboot-total-kwh-last-ts";
         var ONE_HOUR_MS = 60 * 60 * 1000;
         var KWH_PER_HOUR_AT_FULL = 10;
-        var KWH_COST_PER_REPAIR = 0.5;
+        var KWH_COST_PER_REPAIR = 0.1;
 
         var MAINTENANCE_DECAY_MS = 40 * 60 * 1000;
         /** After build/repair, stay at 100% briefly, then linear decay to 0% over MAINTENANCE_DECAY_MS. */
@@ -419,7 +419,7 @@
           // Total electricity (kWh):
           // Each station at 100% maintenance generates 10 kWh per hour.
           // Contribution scales linearly with current maintenance percent.
-          // Each successful repair consumes 0.5 kWh (charged at repair event).
+          // Each successful repair consumes 0.1 kWh (charged at repair event).
           try {
             var lastKwhTs = parseFloat(localStorage.getItem(LS_TOTAL_KWH_LAST_TS) || "");
             var totalKwh = parseFloat(localStorage.getItem(LS_TOTAL_KWH) || "");
@@ -472,11 +472,23 @@
           } catch (eBR) {}
         }
 
+        function currentTotalKwh() {
+          try {
+            var v = parseFloat(localStorage.getItem(LS_TOTAL_KWH) || "");
+            return isFinite(v) ? v : 0;
+          } catch (e) {
+            return 0;
+          }
+        }
+
+        function canAffordRepairCost() {
+          return currentTotalKwh() >= KWH_COST_PER_REPAIR - 1e-9;
+        }
+
         function chargeRepairEnergyCost() {
           var now = Date.now();
           try {
-            var totalKwh = parseFloat(localStorage.getItem(LS_TOTAL_KWH) || "");
-            if (!isFinite(totalKwh)) totalKwh = 0;
+            var totalKwh = currentTotalKwh();
             var next = Math.max(0, totalKwh - KWH_COST_PER_REPAIR);
             localStorage.setItem(LS_TOTAL_KWH, String(next));
             localStorage.setItem(LS_TOTAL_KWH_LAST_TS, String(now));
@@ -752,6 +764,7 @@
             try {
               var ro = JSON.parse(payloadToUtf8(payload));
               if (!ro || ro.action !== "repair") return;
+              if (!canAffordRepairCost()) return;
               var ok = false;
               if (ro.target === "lowest") ok = applyRepairLowestMaintenanceStation();
               else if (typeof ro.stationId === "string" && ro.stationId.trim())

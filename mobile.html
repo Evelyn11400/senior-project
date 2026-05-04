@@ -1224,12 +1224,15 @@ People finally realized that they must utilize every possible resource. In addit
 
       var btnRepair = document.getElementById("btn-repair-station");
       var repairNoneBackdrop = document.getElementById("repair-none-modal-backdrop");
+      var repairNoneText = document.getElementById("repair-none-modal-text");
       var repairNoneOk = document.getElementById("repair-none-modal-ok");
       var repairConfirmBackdrop = document.getElementById("repair-confirm-modal-backdrop");
       var repairConfirmText = document.getElementById("repair-confirm-modal-text");
       var repairConfirmYes = document.getElementById("repair-confirm-modal-yes");
       var repairConfirmNo = document.getElementById("repair-confirm-modal-no");
       var repairPublishing = false;
+      var REPAIR_COST_KWH = 0.1;
+      var latestTotalKwh = 0;
 
       var successBackdrop = document.getElementById("action-success-modal-backdrop");
       var successText = document.getElementById("action-success-modal-text");
@@ -1319,6 +1322,7 @@ People finally realized that they must utilize every possible resource. In addit
               var eo = JSON.parse(payloadToUtf8Stations(payload));
               if (!eo || typeof eo.totalKwh !== "number" || !isFinite(eo.totalKwh))
                 return;
+              latestTotalKwh = eo.totalKwh;
               if (statTotalElectricity)
                 statTotalElectricity.textContent = eo.totalKwh.toFixed(1) + " kWh";
             } catch (eE) {}
@@ -1512,8 +1516,10 @@ People finally realized that they must utilize every possible resource. In addit
       });
       updateBuildTokensHint();
 
-      function openRepairNoneModal() {
+      function openRepairNoneModal(message) {
         if (!repairNoneBackdrop) return;
+        if (repairNoneText && typeof message === "string" && message.trim())
+          repairNoneText.textContent = message.trim();
         if (window.__blackoutSetModalOpen) window.__blackoutSetModalOpen(true);
         repairNoneBackdrop.classList.remove("hidden");
         repairNoneBackdrop.setAttribute("aria-hidden", "false");
@@ -1643,8 +1649,12 @@ People finally realized that they must utilize every possible resource. In addit
           if (repairPublishing) return;
           var B = window.BlackoutMQTT;
           if (!B || typeof B.publish !== "function" || !B.client) return;
+          if (!(latestTotalKwh >= REPAIR_COST_KWH - 1e-9)) {
+            openRepairNoneModal("Not enough electricity. Please build a station first.");
+            return;
+          }
           openRepairConfirmModal(
-            "This will repair the lowest-maintenance station (+5% maintenance, max 100%). This will cost 0.5 kWh. Continue?"
+            "This will repair the lowest-maintenance station (+5% maintenance, max 100%). This will cost 0.1 kWh. Continue?"
           );
         });
       }
